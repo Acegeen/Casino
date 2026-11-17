@@ -1,7 +1,7 @@
 {
-  "name": "Royal Casino",
-  "short_name": "Royal Casino",
-  "description": "Het kaartspel Royal Casino, tegen de computer of online 1 tegen 1.",
+  "name": "Ace Casino",
+  "short_name": "Ace Casino",
+  "description": "Het kaartspel Casino: tegen de computer, samen op één telefoon of online 1 tegen 1.",
   "lang": "nl",
   "start_url": "./",
   "scope": "./",
