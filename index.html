@@ -1209,8 +1209,7 @@ const AVCAT=[
  ["brows","Wenkbrauwen",[["flat","Recht"],["high","Hoog"],["angry","Boos"],["thick","Dik"]]],
  ["mouth","Mond",[["smile","Glimlach"],["grin","Grijns"],["laugh","Open lach"],["neutral","Neutraal"],["tongue","Tong uit"],["smug","Zelfvoldane grijns"],["goldtooth","Gouden tand"]]],
  ["beard","Gezichtshaar",[["none","Geen"],["stubble","Stoppels"],["mustache","Snor"],["full","Volle baard"],["goateeMus","Sik met snor"],["goat","Geitensik"]]],
- ["glasses","Bril",[["none","Geen"],["round","Rond"],["rect","Rechthoekig"],["horn","Hoornen bril"],["monocle","Monocle"],["sun","Zonnebril"]]],
- ["glassTint","Glazen",[["clear","Helder"],["tint","Getint"],["dark","Donker"]]],
+ ["glasses","Bril",[["none","Geen"],["round","Rond"],["round_tint","Rond, medium getint"],["round_dark","Rond, donker getint"],["rect","Rechthoekig"],["rect_tint","Rechthoekig, medium getint"],["rect_dark","Rechthoekig, donker getint"],["horn","Hoornen bril"],["horn_tint","Hoornen bril, medium getint"],["horn_dark","Hoornen bril, donker getint"],["monocle","Monocle"],["sun","Zonnebril"]]],
  ["hat","Hoofddeksel",[["none","Geen"],["beanie","Beanie"],["cap","Pet"],["capBack","Pet naar achteren"],["durag","Durag"],["bonnet","Bonnet"],["helm","Bouwhelm"],["grad","Afstudeerhoed"],["crown","Gouden kroon"],["chick","Kuikentje"],["headband","Vechtersband"],["fisher","Vissershoedje"],["pirate","Piratenhoed met ooglap"],["sweat","Zweetband"]]],
  ["hatColor","Kleur hoofddeksel","CLOTH"],
  ["ear","Oorbellen",[["none","Geen"],["silver","Zilveren knopjes"],["goldring","Gouden ringen"],["spade","Schoppen-aas"],["dice","Dobbelstenen"],["diamond","Diamant"]]],
@@ -1221,11 +1220,12 @@ const AVCAT=[
  ["frame","Rand",[["none","Geen"],["flames","Vlammen"],["cards","Gouden speelkaarten"]]]
 ];
 const PAL={SKIN,HAIRC,CLOTH,BGC};
-const UNLOCK={"hat:helm":"build","neck:clover":"clear1","hat:grad":"tut","neck:medal":"win1","hat:chick":"easy","glasses:horn":"normal","glasses:monocle":"hard","hat:crown":"master","hat:headband":"boss","ear:spade":"aces4","hat:fisher":"big","ear:dice":"double","hat:pirate":"pirate","bgPat:glitter":"clear3","bgPat:spades":"spades","ear:diamond":"allin","beard:goat":"goat","mouth:goldtooth":"comeback","hat:sweat":"sprint","bgPat:hourglass":"long","mouth:smug":"revenge","frame:flames":"rival","bgPat:bolt":"fast","glasses:sun":"him","neck:ribbon":"vet","frame:cards":"acesboss","bgPat:diamonds":"d10"};
-const AVDEF={face:"round",skin:2,hair:"short",hairColor:1,eyes:"normal",brows:"flat",mouth:"smile",beard:"none",glasses:"none",glassTint:"clear",hat:"none",hatColor:3,ear:"none",neck:"none",shirt:3,bg:0,bgPat:"none",frame:"none"};
+const UNLOCK={"hat:helm":"build","neck:clover":"clear1","hat:grad":"tut","neck:medal":"win1","hat:chick":"easy","glasses:horn":"normal","glasses:horn_tint":"normal","glasses:horn_dark":"normal","glasses:monocle":"hard","hat:crown":"master","hat:headband":"boss","ear:spade":"aces4","hat:fisher":"big","ear:dice":"double","hat:pirate":"pirate","bgPat:glitter":"clear3","bgPat:spades":"spades","ear:diamond":"allin","beard:goat":"goat","mouth:goldtooth":"comeback","hat:sweat":"sprint","bgPat:hourglass":"long","mouth:smug":"revenge","frame:flames":"rival","bgPat:bolt":"fast","glasses:sun":"him","neck:ribbon":"vet","frame:cards":"acesboss","bgPat:diamonds":"d10"};
+const AVDEF={face:"round",skin:2,hair:"short",hairColor:1,eyes:"normal",brows:"flat",mouth:"smile",beard:"none",glasses:"none",hat:"none",hatColor:3,ear:"none",neck:"none",shirt:3,bg:0,bgPat:"none",frame:"none"};
 const COVER=new Set(["beanie","cap","capBack","durag","bonnet","helm","grad","fisher","pirate"]);
 function normAv(c){
   const o={...AVDEF};if(!c||typeof c!=="object")return o;
+  if((c.glassTint==="tint"||c.glassTint==="dark")&&["round","rect","horn"].includes(c.glasses))c={...c,glasses:c.glasses+"_"+c.glassTint};
   for(const [k,,opts] of AVCAT){
     const v=c[k];
     if(typeof opts==="string"){if(Number.isInteger(v)&&v>=0&&v<PAL[opts].length)o[k]=v}
@@ -1265,6 +1265,8 @@ function loc(x0,y0,cx,cy,x1,y1,w,hc,hd){
   for(let i=1;i<N;i++){const [x,y,nx,ny,ww]=P[i];tex+="M"+(x+nx*ww*.75).toFixed(1)+" "+(y+ny*ww*.75).toFixed(1)+" Q"+(x+ny*2).toFixed(1)+" "+(y-nx*2).toFixed(1)+" "+(x-nx*ww*.75).toFixed(1)+" "+(y-ny*ww*.75).toFixed(1)+" "}
   return'<path d="M'+Lp.join(" L")+" L"+Rp.join(" L")+'Z" fill="'+hc+'" stroke="'+hd+'" stroke-width=".7" stroke-linejoin="round"/>'+circ(e[0],e[1],+e[4].toFixed(1),hc)+'<path d="'+tex+'" stroke="'+hd+'" stroke-width=".9" fill="none" opacity=".8" stroke-linecap="round"/>'+'<path d="M'+(P[1][0]-P[1][2]*P[1][4]*.35).toFixed(1)+" "+(P[1][1]-P[1][3]*P[1][4]*.35).toFixed(1)+" L"+(P[N-2][0]-P[N-2][2]*P[N-2][4]*.35).toFixed(1)+" "+(P[N-2][1]-P[N-2][3]*P[N-2][4]*.35).toFixed(1)+'" stroke="#fff" stroke-width=".8" opacity=".14"/>';
 }
+function strand(d,w,hc,hd,segs){return'<path d="'+d+'" stroke="'+hd+'" stroke-width="'+(w+1.6)+'" stroke-linecap="round" fill="none"/><path d="'+d+'" stroke="'+hc+'" stroke-width="'+w+'" stroke-linecap="round" fill="none"/>'+(segs?'<path d="'+d+'" stroke="'+hd+'" stroke-width="'+w+'" stroke-dasharray="0.9 3.4" fill="none" opacity=".55"/>':'<path d="'+d+'" stroke="#fff" stroke-width="1" fill="none" opacity=".18" transform="translate('+(-w*.2).toFixed(1)+' 0)"/>')}
+const Q=(x0,y0,cx,cy,x1,y1)=>"M"+x0.toFixed(1)+" "+y0.toFixed(1)+" Q"+cx.toFixed(1)+" "+cy.toFixed(1)+" "+x1.toFixed(1)+" "+y1.toFixed(1);
 function hairBack(h,x){
   const hc=x.hc,hd=x.hd;let s="";
   switch(h){
@@ -1272,11 +1274,8 @@ function hairBack(h,x){
     case"pony":s='<path d="M80 38 C100 42 102 72 92 96 C88 80 86 62 79 52Z" fill="'+hc+'"/><path d="M84 46 C94 56 94 74 90 88" stroke="'+hd+'" stroke-width="1.2" fill="none" opacity=".6"/>';break;
     case"afro":s=circ(60,44,31,hc);for(let a=0;a<360;a+=24){const t=a*Math.PI/180;s+=circ(60+30*Math.cos(t),44+29*Math.sin(t),9,hc)}s+=curlTex(3.2,hd,34,86,20,64);break;
     case"curlS":case"curlM":case"curlL":{const r=h==="curlS"?3:h==="curlM"?4.6:6.4;s='<path d="M30 52 C28 28 44 20 60 20 C76 20 92 28 90 52 L90 86 Q60 94 30 86Z" fill="'+hc+'"/>'+curlRing(r,hc,88)+curlTex(r,hd,30,90,24,86);break}
-    case"braidsL":case"braidsS":{const y1=h==="braidsL"?108:82;for(let i=0;i<12;i++){const xx=31+i*5.3;s+=braid(xx.toFixed(1),42,y1-(Math.abs(xx-60)<14?0:4),4.4,hc,hd)}break}
-    case"locsL":{// lange locs achter het hoofd, vallend over de schouders
-      const roots=[[34,46,-6,104],[38,40,-4,108],[43,35,-2,110],[50,31,0,112],[57,30,1,112],[63,30,-1,112],[70,31,0,112],[77,35,2,110],[82,40,4,108],[86,46,6,104]];
-      for(const [x0,y0,dx,y1] of roots)s+=loc(x0,y0,x0+dx*2.4+(x0<60?-6:6),y0+28,x0+dx*1.6+(x0<60?-5:5),y1,6.4,hc,hd);break}
-    case"locsS":{for(const [x0,y0] of[[38,48],[82,48],[42,40],[78,40]])s+=loc(x0,y0,x0+(x0<60?-5:5),y0+10,x0+(x0<60?-4:4),y0+22,5.6,hc,hd);break}
+    case"braidsL":case"braidsS":{const y1=h==="braidsL"?106:82;for(let xx=33;xx<=87;xx+=6)s+=strand(Q(60+(xx-60)*.55,30,xx,44,xx+(xx-60)*.08,y1-Math.abs(xx-60)*.08),4.2,hc,hd,true);break}
+    case"locsL":case"locsS":{const y1=h==="locsL"?106:84;for(let xx=32;xx<=88;xx+=5.6)s+=strand(Q(60+(xx-60)*.45,26,xx+(xx-60)*.15,46,xx+(xx-60)*.12,y1-Math.abs(xx-60)*.1),5.2,hc,hd);break}
   }
   return grp(x,s);
 }
@@ -1293,25 +1292,18 @@ function hairFront(h,x,noCap){
     case"curlS":case"curlM":case"curlL":{const r=h==="curlS"?3:h==="curlM"?4.6:6.4;s=cap(x,{scale:1.12});for(let xx=38;xx<=82;xx+=r*1.5)e+=circ(xx,38-Math.sin((xx-38)/44*Math.PI)*3+((xx/r)%2),r,hc);e+=curlTex(r,hd,38,82,26,38);break}
     case"curlShort":s=cap(x,{scale:1.1});for(let a=195;a<=345;a+=14){const t=a*Math.PI/180;e+=circ(60+25*Math.cos(t),40+15*Math.sin(t),4.2,hc)}for(let xx=40;xx<=80;xx+=6)e+=circ(xx,37,3.8,hc);e+=curlTex(4,hd,40,80,25,38);break;
     case"curlFade":s=cap(x,{op:.38,scale:1.04});e='<ellipse cx="60" cy="29" rx="17" ry="11" fill="'+hc+'"/>';for(let xx=44;xx<=76;xx+=5.2)e+=circ(xx,21+Math.abs(xx-60)*.18,4.6,hc)+circ(xx+2.4,35,4.2,hc);e+=curlTex(4.4,hd,45,75,19,36);break;
-    case"cornrows":s=cap(x,{scale:1.05});for(const xx of[42,49,56,63,70,77])e+='<path d="M'+xx+" 40 Q"+(60+(xx-60)*.75)+" 30 "+(60+(xx-60)*.5)+' 24" stroke="'+hd+'" stroke-width="2.2" fill="none" stroke-dasharray="1.6 1.4"/>';break;
-    case"braidsL":case"braidsS":s=cap(x,{scale:1.07});for(const xx of[45,53,60,67,75])e+='<path d="M'+xx+" 38 L"+(60+(xx-60)*.6)+' 26" stroke="'+hd+'" stroke-width="1" opacity=".6"/>';e+=braid(36,46,h==="braidsL"?96:78,4.4,hc,hd)+braid(84,46,h==="braidsL"?96:78,4.4,hc,hd);break;
-    case"locsS":{// korte locs: dicht op elkaar, staand en iets naar buiten, aan de zijkant kort vallend
-      s=cap(x,{scale:1.17,center:39});const hw=x.g.hw,hl=xx=>38+Math.pow((xx-60)/hw,2)*14;
-      for(const xx of[44,52,60,68,76]){const y0=hl(xx)-7;e+=loc(xx,y0,xx+(xx-60)*.15,y0-7,xx+(xx-60)*.3,y0-13+Math.abs(xx-60)*.12,5.6,hc,hd)}
-      for(let xx=40;xx<=80;xx+=5){const y0=hl(xx)+1;e+=loc(xx,y0,xx+(xx-60)*.1,y0-5,xx+(xx-60)*.22,y0-11,5.2,hc,hd)}
-      for(const [xx,dir] of[[37,-1],[39.5,-1],[83,1],[80.5,1]])e+=loc(xx,44,xx+dir*2,52,xx+dir*1.5,62,5,hc,hd);
-      break}
-    case"locsL":{// locs naar achteren over het hoofd, met strengen langs het gezicht en over de schouders
-      s=cap(x,{scale:1.15,side:58,center:37,part:4});const hw=x.g.hw,hl=xx=>37+Math.pow((xx-60)/hw,2)*15;
-      for(let xx=42;xx<=78;xx+=6){e+=loc(xx,hl(xx)+1,xx+(xx-60)*.2,hl(xx)-8,60+(xx-60)*.55,24,5.4,hc,hd)}
-      e+=loc(39,42,31,60,34,98,6.2,hc,hd)+loc(81,42,89,60,86,98,6.2,hc,hd)+loc(43,40,39,62,41,90,5.6,hc,hd)+loc(77,40,81,62,79,86,5.6,hc,hd);
+    case"cornrows":{s=cap(x,{scale:1.05});const hw=x.g.hw;for(const xx of[44,51,58,65,72]){const t=(xx-58)/14;const top=x.g.cy-x.g.ry*1.0+2;e+='<path d="'+Q(xx+1,38+Math.abs(t)*3,60+t*hw*.5,top+5,60+t*hw*.28,top)+'" stroke="'+hd+'" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".8"/>'}break}
+    case"braidsL":case"braidsS":{s=cap(x,{scale:1.06});const y1=h==="braidsL"?96:78;const top=x.g.cy-x.g.ry+2;for(const xx of[47,54,61,68,75])e+='<path d="'+Q(xx-1,38,60+(xx-60)*.7,top+5,60+(xx-60)*.45,top)+'" stroke="'+hd+'" stroke-width="1" fill="none" opacity=".6"/>';e+=strand(Q(39,42,34,58,36,y1),4.2,hc,hd,true)+strand(Q(81,42,86,58,84,y1),4.2,hc,hd,true);break}
+    case"locsS":case"locsL":{// locs vanaf de kruin: pony boven de wenkbrauwen, strengen langs het gezicht
+      s=cap(x,{scale:1.17,center:39});const side=h==="locsL"?100:80;
+      for(const [xx,yy] of[[44,45],[50,46],[56,47],[62,46],[68,46],[74,45]])e+=strand(Q(60+(xx-60)*.4,24,xx+(xx-60)*.25,30,xx,yy),5,hc,hd);
+      e+=strand(Q(46,27,36,36,37,side-6),5.2,hc,hd)+strand(Q(74,27,84,36,83,side-6),5.2,hc,hd)+strand(Q(42,30,31,44,32,side),5.2,hc,hd)+strand(Q(78,30,89,44,88,side),5.2,hc,hd);
       break}
   }
   return (noCap?"":s)+grp(x,e);
 }
 function hatBack(h,col,x){
   let s="";
-  if(h==="capBack")s='<path d="M36 26 C40 4 80 4 84 26 C78 15 42 15 36 26Z" fill="'+shade(col,-24)+'"/><path d="M36 26 C42 12 78 12 84 26" stroke="'+shade(col,-40)+'" stroke-width="1.2" fill="none"/>';
   if(h==="durag")s='<path d="M80 44 Q92 70 90 104 L84 104 Q86 72 76 48Z" fill="'+shade(col,-10)+'"/><path d="M84 46 Q100 72 100 102 L94 102 Q94 74 80 50Z" fill="'+col+'"/>';
   if(h==="bonnet")s='<ellipse cx="60" cy="34" rx="36" ry="27" fill="'+shade(col,-10)+'"/>';
   return grp(x,s);
@@ -1346,7 +1338,8 @@ function hatFront(h,col,x){
   return grp(x,s);
 }
 const LENS={clear:['#fff','.15'],tint:['#5a4632','.5'],dark:['#111114','.9']};
-function glasses(g,tint){
+function glasses(g){
+  const tint=g.includes("_")?g.split("_")[1]:"clear";g=g.split("_")[0];
   const [lc,lo]=LENS[tint]||LENS.clear,shine=tint==="dark"||tint==="tint"?'<path d="M45 53 L49 53 M64 53 L68 53" stroke="#fff" stroke-width="1.2" opacity=".55"/>':"";
   switch(g){
     case"round":return'<g fill="'+lc+'" fill-opacity="'+lo+'" stroke="#2b2b2e" stroke-width="1.8"><circle cx="51" cy="56" r="7"/><circle cx="69" cy="56" r="7"/></g><path d="M58 55 Q60 53 62 55" stroke="#2b2b2e" stroke-width="1.8" fill="none"/>'+shine;
@@ -1399,7 +1392,7 @@ function beard(b,hc){
   switch(b){
     case"stubble":return'<path d="M38 62 Q40 82 60 84 Q80 82 82 62 Q78 74 60 76 Q42 74 38 62Z" fill="'+hc+'" opacity=".28"/>';
     case"mustache":return'<path d="M51 66 Q56 62 60 65 Q64 62 69 66 Q64 67.5 60 66.5 Q56 67.5 51 66Z" fill="'+hc+'"/>';
-    case"full":return'<path d="M37 56 Q37 86 60 88 Q83 86 83 56 Q80 70 72 72 Q66 66 60 67 Q54 66 48 72 Q40 70 37 56Z" fill="'+hc+'"/>';
+    case"full":return'<path fill-rule="evenodd" d="M37 56 Q37 86 60 88 Q83 86 83 56 Q80 68 72 69 Q66 64.5 60 66 Q54 64.5 48 69 Q40 68 37 56Z M50.5 71 A9.5 5.2 0 1 0 69.5 71 A9.5 5.2 0 1 0 50.5 71Z" fill="'+hc+'"/>';
     case"goateeMus":return'<path d="M51 66 Q56 62 60 65 Q64 62 69 66 Q64 67.5 60 66.5 Q56 67.5 51 66Z" fill="'+hc+'"/><path d="M54 74 Q60 72 66 74 Q65 82 60 83 Q55 82 54 74Z" fill="'+hc+'"/><path d="M51 66 Q50 72 54 75 M69 66 Q70 72 66 75" stroke="'+hc+'" stroke-width="2" fill="none"/>';
     case"goat":return'<path d="M55 75 Q60 73 65 75 Q64 88 60 93 Q56 88 55 75Z" fill="'+hc+'"/>';
     default:return"";
@@ -1455,7 +1448,7 @@ function avatarSVG(c,size){
   s+=circ(46,65,3.6,"#ff8a8a",' opacity=".18"')+circ(74,65,3.6,"#ff8a8a",' opacity=".18"');
   s+=grp(x,beard(c.beard,hc))+'<path d="M60 58 Q57 64 60 65.2 Q62 65.4 63.4 64.2" fill="none" stroke="'+shade(sk,-22)+'" stroke-width="1.6" stroke-linecap="round"/>'+mouth(c.mouth)+eyes(c.eyes)+brows(c.brows,c.hair==="bald"?shade(sk,-35):hd);
   if(!cover)s+=hairFront(c.hair,x);
-  s+=glasses(c.glasses,c.glassTint)+hatFront(c.hat,hcol,x);
+  s+=glasses(c.glasses)+hatFront(c.hat,hcol,x);
   s+="</g>"+frameSVG(c.frame)+"</svg>";
   return s;
 }
@@ -1550,7 +1543,7 @@ function avRandom(){
   const b=getBadges(),r=arr=>arr[rnd(arr.length)];
   for(const [k,,opts] of AVCAT){
     if(typeof opts==="string")avDraft[k]=rnd(PAL[opts].length);
-    else{const ok=opts.map(x=>x[0]).filter(v=>isUnlocked(k,v,b));avDraft[k]=k==="glassTint"?(rnd(3)?"clear":r(ok)):["hat","glasses","ear","neck","bgPat","frame","beard"].includes(k)&&rnd(2)?"none":r(ok)}
+    else{const ok=opts.map(x=>x[0]).filter(v=>isUnlocked(k,v,b));avDraft[k]=["hat","glasses","ear","neck","bgPat","frame","beard"].includes(k)&&rnd(2)?"none":r(ok)}
   }
   renderAvatarMaker();
 }
