@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Royal Casino">
+<meta name="theme-color" content="#2f7a4f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Royal Casino</title>
+<style>
+:root{--bg:#f4f1ea;--fg:#1d1d1f;--muted:#6b6b70;--felt:#2f7a4f;--card:#fff;--red:#d62839;--blk:#1a1a1a;--btn:#1d1d1f;--btnfg:#fff;--panel:#fff;--field:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15161a;--fg:#f1f1f3;--muted:#9a9aa3;--felt:#1f5a3a;--card:#f4f1ea;--btn:#f1f1f3;--btnfg:#15161a;--panel:#202228;--field:#2a2c33;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15161a;--fg:#f1f1f3;--muted:#9a9aa3;--felt:#1f5a3a;--card:#f4f1ea;--btn:#f1f1f3;--btnfg:#15161a;--panel:#202228;--field:#2a2c33;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;padding:12px 10px 32px;-webkit-user-select:none;user-select:none}
+.wrap{width:min(96vw,460px)}
+.top{display:flex;justify-content:space-between;align-items:center;font-weight:600;margin-bottom:4px;gap:8px}
+.top .r{display:flex;align-items:center;gap:10px}
+.info{color:var(--muted);font-size:.8rem;margin-bottom:8px}
+.status{font-size:.85rem;padding:8px 10px;border-radius:10px;background:var(--panel);margin:4px 0 8px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.status.bad{box-shadow:inset 0 0 0 2px var(--red)}
+.hand{display:flex;gap:6px;justify-content:center;min-height:84px;margin:6px 0}
+.card{width:calc((100% - 18px)/4);max-width:76px;aspect-ratio:5/7;background:var(--card);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:1.25rem;line-height:1.1;box-shadow:0 2px 5px rgba(0,0,0,.3);color:var(--blk);cursor:pointer;border:3px solid transparent;box-sizing:border-box;-webkit-tap-highlight-color:transparent;transition:transform .12s}
+.card.r{color:var(--red)}
+.card.sel{border-color:#f5b800;transform:translateY(-6px)}
+.card.back{background:repeating-linear-gradient(45deg,#2b4acb,#2b4acb 6px,#1e3699 6px,#1e3699 12px);cursor:default}
+#table{background:var(--felt);border-radius:14px;padding:10px;min-height:120px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-content:flex-start}
+#table .card{width:58px}
+.build{border:3px solid transparent;border-radius:10px;background:rgba(0,0,0,.25);padding:4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-width:58px;-webkit-tap-highlight-color:transparent}
+.build.sel{border-color:#f5b800}
+.bv{color:#fff;font-weight:800;font-size:.95rem;text-align:center}
+.mini{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;max-width:90px}
+.mini span{background:var(--card);color:var(--blk);border-radius:4px;padding:1px 4px;font-size:.75rem;font-weight:700}
+.mini span.r{color:var(--red)}
+#turn{margin:10px 2px 0;font-size:.8rem;font-weight:700;color:var(--muted)}
+#turn.me{color:var(--felt)}
+#msg{min-height:2.6em;margin:4px 2px 4px;font-size:.92rem;font-weight:600}
+.acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:42px}
+button{font:inherit;font-weight:600;background:var(--btn);color:var(--btnfg);border:0;border-radius:10px;padding:10px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button.alt{background:transparent;color:var(--fg);box-shadow:inset 0 0 0 2px var(--muted)}
+button.link{background:transparent;color:var(--muted);padding:6px 4px;text-decoration:underline}
+button.small{padding:6px 10px;font-size:.85rem}
+button:disabled{opacity:.35;cursor:default}
+.panel{background:var(--panel);border-radius:14px;padding:14px;margin-top:12px;line-height:1.5;font-size:.93rem}
+.panel h2{margin:0 0 8px;font-size:1.1rem}
+.col{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+label{display:block;font-size:.85rem;color:var(--muted);font-weight:600}
+input{font:inherit;font-size:16px;width:100%;box-sizing:border-box;margin-top:4px;padding:10px 12px;border-radius:10px;border:2px solid var(--muted);background:var(--field);color:var(--fg);-webkit-user-select:text;user-select:text}
+.join{display:flex;gap:8px;align-items:stretch}
+.join input{margin:0;text-transform:uppercase;letter-spacing:.15em;font-weight:700}
+.or{color:var(--muted);font-size:.8rem;text-align:center;margin:4px 0 8px}
+.code{font-size:2rem;font-weight:800;letter-spacing:.2em;text-align:center;margin:10px 0;font-variant-numeric:tabular-nums;-webkit-user-select:text;user-select:text}
+.hint{color:var(--muted);font-size:.85rem;margin:8px 0 0}
+details{margin-top:14px;color:var(--muted);font-size:.85rem}
+.lm{margin:4px 0 6px;padding:8px 10px;border-radius:10px;background:var(--panel);font-size:.85rem}.lm .row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:5px}.lm .c2{background:var(--card);color:var(--blk);border-radius:5px;padding:3px 7px;font-weight:700;font-size:1rem}.lm .c2.r{color:var(--red)}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="top"><div>♠ Royal Casino</div><div class="r"><div id="score"></div><button class="link small hide" id="menuBtn" onclick="leave()">Menu</button></div></div>
+<div class="status hide" id="status"></div>
+
+<div id="game" class="hide">
+<div class="info" id="info"></div>
+<div class="hand" id="opp"></div>
+<div id="table"></div>
+<div id="turn"></div>
+<div id="msg"></div>
+<div id="last"></div>
+<div class="acts" id="acts"></div>
+<div class="hand" id="mine"></div>
+</div>
+
+<div class="panel hide" id="end"></div>
+
+<div class="panel" id="menu">
+<h2>Royal Casino</h2>
+<label>Je naam<input id="name" maxlength="16" autocomplete="nickname" placeholder="Hoe heet je?"></label>
+<div class="col">
+<button onclick="showAiStart()">Speel tegen de computer</button>
+<button onclick="hostGame()">Speel online: nodig iemand uit</button>
+</div>
+<div class="or">of doe mee met een code</div>
+<div class="join"><input id="code" maxlength="6" placeholder="CODE" autocapitalize="characters" autocomplete="off" spellcheck="false"><button class="alt" onclick="joinGame($('code').value)">Meedoen</button></div>
+<p class="hint hide" id="joinHint"></p>
+<p class="hint hide" id="a2hs">Tip: tik in Safari op het deelicoon en kies ‘Zet op beginscherm’ om dit als app te installeren.</p>
+</div>
+
+<div class="panel hide" id="aistart">
+<h2>Tegen de computer</h2>
+<p>Wie mag er beginnen in de eerste ronde? Daarna wisselt het elke ronde.</p>
+<div class="acts"><button onclick="startAi('p')">Ik begin</button><button class="alt" onclick="startAi('c')">Computer begint</button></div>
+<p><button class="link" onclick="toMenu()">Terug</button></p>
+</div>
+
+<div class="panel hide" id="lobby">
+<h2>Online spelen</h2>
+<div id="lobbyBody"></div>
+<p><button class="link" onclick="leave(true)">Annuleren</button></p>
+</div>
+
+<details><summary>Spelregels</summary>
+<p>Aas = 1 of 14, B = 11, V = 12, K = 13. Pak mee: speel een kaart en pak tafelkaarten waarvan de waarden samen (of in groepjes) precies die waarde zijn. Bouw: leg een kaart op tafelkaarten tot een nieuwe waarde, als je een kaart met die waarde nog in je hand hebt. Een bouwsel kan door iedereen gepakt of verhoogd worden. Bouw je meerdere groepjes met dezelfde waarde (bijvoorbeeld 6+5 en 4+7 = 11 en 11), dan is het een dubbel bouwsel: dat kan niet verhoogd worden en alleen met een kaart van die waarde gepakt worden. Kun je niets, leg dan een kaart neer. Aan het einde pakt de laatste die iets pakte de rest van de tafel. Punten: meeste kaarten 3, ♠2 1, meeste schoppen 1, ♦10 2, elke aas 1. Bij gelijkspel in kaarten of schoppen krijgt niemand dat punt. Tafel leegmaken met een pakzet: +1 punt. Maakt de ander daarna de tafel leeg, dan verlies jij dat punt (en krijgt de ander er niets voor). Het opruimen van de rest aan het einde telt niet mee. Heb je een bouwsel liggen (en nog een kaart om het te pakken), dan mag je niets neerleggen tot je het meeneemt; ander bouwen mag wel. Het spel loopt tot 21 punten. Vanaf 17 punten tellen alleen nog meerderheid kaarten en meerderheid schoppen, vanaf 20 alleen nog meerderheid schoppen.</p>
+<p>Online spelen: tik op ‘Speel online’, deel de uitnodiging en houd het scherm open tot je tegenstander meedoet. Je tegenstander opent de link of vult de code in.</p>
+</details>
+</div>
+
+<script>
+"use strict";
+const SU=["♠","♥","♦","♣"],RL=["","A","2","3","4","5","6","7","8","9","10","B","V","K"];
+const PEERJS="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js";
+const PFX="royal-casino-nl-";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const cleanName=n=>String(n||"").replace(/[<>{}]/g,"").trim().slice(0,16);
+
+// ---------- state ----------
+let S=null;          // authoritative game state (computer mode and host)
+let V=null;          // what this screen shows (always from "my" side: p = me)
+let mode=null;       // "ai" | "host" | "guest"
+let oppName="Computer",myName=cleanName(lsGet("rc_name"));
+let selH=-1,selT=[],busy=false;
+let peer=null,conn=null,hostCode=null,joinCode=null,guestId=null,connState="",rcT=null;
+let gid=lsGet("rc_gid");if(!gid){gid=Math.random().toString(36).slice(2)+Date.now().toString(36);lsSet("rc_gid",gid)}
+
+// ---------- rules ----------
+const cn=c=>RL[c.r]+SU[c.s];
+const vOpts=c=>c.r===1?[1,14]:[c.r];
+const iOpts=it=>it.val?[it.val]:vOpts(it.cards[0]);
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const itName=it=>it.val?"bouwsel "+it.val:cn(it.cards[0]);
+function combos(items){let res=[[]];for(const it of items){const n=[];for(const r of res)for(const v of iOpts(it))n.push(r.concat(v));res=n}return res}
+function parts(vals,v){
+  if(!vals.length)return true;
+  const f=vals[0],rest=vals.slice(1);
+  for(let m=0;m<(1<<rest.length);m++){
+    let s=f;const left=[];
+    for(let i=0;i<rest.length;i++){if((m>>i)&1)s+=rest[i];else left.push(rest[i])}
+    if(s===v&&parts(left,v))return true;
+  }
+  return false;
+}
+function capOK(card,items){
+  if(!items.length)return false;
+  return vOpts(card).some(v=>{const ms=items.filter(i=>i.multi);if(ms.some(i=>i.val!==v))return false;const rs=items.filter(i=>!i.multi);if(!rs.length)return true;return combos(rs).some(vals=>sum(vals)%v===0&&parts(vals,v))});
+}
+function buildInfo(card,items,rest){
+  if(!items.length)return[];
+  const out={},cs=combos(items);
+  for(const pv of vOpts(card))for(const vals of cs){
+    const all=[pv,...vals],S2=sum(all);
+    for(let T=2;T<=14;T++){
+      if(S2%T||!rest.some(c=>vOpts(c).includes(T)))continue;
+      if(items.some(i=>i.multi&&i.val!==T))continue;
+      if(!parts(all,T))continue;
+      const mu=S2/T>1||items.some(i=>i.multi);
+      out[T]=out[T]===undefined?mu:(out[T]&&mu);
+    }
+  }
+  return Object.keys(out).map(t=>({T:+t,multi:out[t]})).sort((a,b)=>a.T-b.T);
+}
+function mustTakeIn(table,hand,owner){return table.some(it=>it.val&&it.owner===owner&&hand.some(c=>vOpts(c).includes(it.val)))}
+
+// ---------- engine (works on S) ----------
+function newState(){return{deck:[],table:[],hand:{p:[],c:[]},pile:{p:[],c:[]},turn:"p",starter:"c",lastCap:null,clr:{p:0,c:0},tot:{p:0,c:0},round:0,over:true,msg:"",lastMove:null,end:null}}
+function rnd(n){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%n}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function deal(){for(let i=0;i<4;i++){S.hand.p.push(S.deck.pop());S.hand.c.push(S.deck.pop())}}
+function startRound(s){
+  S.starter=s||(S.starter==="p"?"c":"p");
+  S.deck=[];for(let su=0;su<4;su++)for(let r=1;r<=13;r++)S.deck.push({r,s:su});
+  shuffle(S.deck);
+  S.table=[];for(let i=0;i<4;i++)S.table.push({cards:[S.deck.pop()]});
+  S.hand={p:[],c:[]};S.pile={p:[],c:[]};deal();
+  S.lastCap=null;S.clr={p:0,c:0};S.lastMove=null;S.round++;S.over=false;S.end=null;S.turn=S.starter;
+  S.msg="{"+S.starter+"} begint.";
+}
+function newMatch(){S.tot={p:0,c:0};S.round=0;startRound()}
+const other=w=>w==="p"?"c":"p";
+function removeItems(idxs){S.table=S.table.filter((_,i)=>!idxs.includes(i))}
+function doCapture(who,hi,idxs){
+  const card=S.hand[who][hi],items=idxs.map(i=>S.table[i]);
+  S.hand[who].splice(hi,1);
+  S.pile[who].push(card,...items.flatMap(it=>it.cards));
+  removeItems(idxs);S.lastCap=who;S.lastMove={who,k:"cap",card,cards:items.flatMap(it=>it.cards)};
+  let extra="";
+  if(!S.table.length){const o=other(who);if(S.clr[o]>0){S.clr[o]--;extra=" Tafel leeg! {"+o+"} verliest een extra punt."}else{S.clr[who]++;extra=" Tafel leeg! +1 extra punt voor {"+who+"}."}}
+  return "{"+who+"} pakt "+items.map(itName).join(", ")+" met "+cn(card)+"."+extra;
+}
+function doBuild(who,hi,idxs,T){
+  const card=S.hand[who][hi],items=idxs.map(i=>S.table[i]);
+  S.hand[who].splice(hi,1);
+  const cards=[card,...items.flatMap(it=>it.cards)];
+  const inf=buildInfo(card,items,S.hand[who]).find(x=>x.T===T),mu=!!(inf&&inf.multi);
+  removeItems(idxs);S.table.push({cards,val:T,owner:who,multi:mu});S.lastMove={who,k:"build",card,cards:cards.slice(1)};
+  return "{"+who+"} bouwt "+T+(mu?" (dubbel)":"")+" met "+cn(card)+" op "+items.map(itName).join(", ")+".";
+}
+function doTrash(who,hi){
+  const card=S.hand[who][hi];S.hand[who].splice(hi,1);S.table.push({cards:[card]});S.lastMove={who,k:"trash",card,cards:[]};
+  return "{"+who+"} legt "+cn(card)+" neer.";
+}
+function applyAction(who,a){
+  if(!S||S.over||S.turn!==who||!a)return false;
+  const h=S.hand[who];
+  if(!Number.isInteger(a.hi)||a.hi<0||a.hi>=h.length)return false;
+  const raw=Array.isArray(a.idxs)?a.idxs:[];
+  const idxs=[...new Set(raw)].filter(i=>Number.isInteger(i)&&i>=0&&i<S.table.length);
+  if(idxs.length!==raw.length)return false;
+  const card=h[a.hi],items=idxs.map(i=>S.table[i]),rest=h.filter((_,j)=>j!==a.hi);
+  if(a.k==="cap"){if(!capOK(card,items))return false;S.msg=doCapture(who,a.hi,idxs)}
+  else if(a.k==="build"){if(!buildInfo(card,items,rest).some(b=>b.T===a.T))return false;S.msg=doBuild(who,a.hi,idxs,a.T)}
+  else if(a.k==="trash"){if(mustTakeIn(S.table,h,who))return false;S.msg=doTrash(who,a.hi)}
+  else return false;
+  after();return true;
+}
+function after(){
+  if(!S.hand.p.length&&!S.hand.c.length){
+    if(S.deck.length){deal();S.turn=S.starter;S.msg+=" Nieuwe kaarten gedeeld."}
+    else{endRound();sync();return}
+  }else S.turn=other(S.turn);
+  sync();
+  if(mode==="ai"&&S.turn==="c"&&!S.over)aiPlay();
+}
+function endRound(){
+  S.over=true;
+  let note="";
+  if(S.table.length&&S.lastCap){const rest=S.table.flatMap(it=>it.cards);S.pile[S.lastCap].push(...rest);note="{"+S.lastCap+"} pakt de rest van de tafel ("+rest.length+" kaarten).";S.table=[]}
+  const g={p:0,c:0},L=[];
+  const G=(w,cat,p)=>{const t=S.tot[w],ok=t>=20?cat==="spades":t>=17?(cat==="cards"||cat==="spades"):true;if(ok){g[w]+=p;return""}return" (telt niet mee bij "+t+" punten)"};
+  const n=w=>S.pile[w].length,sp=w=>S.pile[w].filter(c=>c.s===0).length;
+  const vs=f=>"{p} "+f("p")+", {c} "+f("c");
+  if(n("p")!==n("c")){const w=n("p")>n("c")?"p":"c";L.push("Meeste kaarten ("+vs(n)+"): {"+w+"} +3"+G(w,"cards",3))}else L.push("Kaarten gelijk ("+vs(n)+"): niemand");
+  if(sp("p")!==sp("c")){const w=sp("p")>sp("c")?"p":"c";L.push("Meeste schoppen ("+vs(sp)+"): {"+w+"} +1"+G(w,"spades",1))}else L.push("Schoppen gelijk ("+vs(sp)+"): niemand");
+  for(const w of["p","c"]){
+    if(S.pile[w].some(c=>c.s===0&&c.r===2))L.push("♠2: {"+w+"} +1"+G(w,"s2",1));
+    if(S.pile[w].some(c=>c.s===2&&c.r===10))L.push("♦10: {"+w+"} +2"+G(w,"d10",2));
+  }
+  for(const w of["p","c"]){const a=S.pile[w].filter(c=>c.r===1).length;if(a)L.push("Azen: {"+w+"} +"+a+G(w,"aces",a))}
+  for(const w of["p","c"])if(S.clr[w]>0)L.push("Tafel leeggemaakt: {"+w+"} +"+S.clr[w]+G(w,"clear",S.clr[w]));
+  S.tot.p+=g.p;S.tot.c+=g.c;
+  const fin=(S.tot.p>=21||S.tot.c>=21)&&S.tot.p!==S.tot.c;
+  S.end={round:S.round,note,lines:L,g,tot:{...S.tot},fin};
+  S.msg="Alle kaarten zijn gespeeld.";
+}
+// view of the state from side w (p = host/me, c = guest)
+function view(s,w){
+  const o=other(w),sw=k=>k==null?k:(w==="p"?k:other(k));
+  const tx=t=>w==="p"?t:String(t).replace(/\{([pc])\}/g,(m,k)=>"{"+other(k)+"}");
+  const pr=x=>({p:x[w],c:x[o]});
+  return{table:s.table.map(it=>it.val?{...it,owner:sw(it.owner)}:it),hand:s.hand[w],oppN:s.hand[o].length,deckN:s.deck.length,
+    pileN:{p:s.pile[w].length,c:s.pile[o].length},clr:pr(s.clr),tot:pr(s.tot),round:s.round,over:s.over,turn:sw(s.turn),starter:sw(s.starter),
+    msg:tx(s.msg),lastMove:s.lastMove?{...s.lastMove,who:sw(s.lastMove.who)}:null,
+    end:s.end?{...s.end,note:tx(s.end.note),lines:s.end.lines.map(tx),g:pr(s.end.g),tot:pr(s.end.tot)}:null};
+}
+function sync(){
+  if(!S)return;
+  V=view(S,"p");
+  if(mode==="host"&&conn&&conn.open){try{conn.send({t:"state",v:view(S,"c")})}catch(e){}}
+  render();
+}
+
+// ---------- computer ----------
+function pts(c){return 1+(c.r===1?2:0)+(c.s===0?.7:0)+(c.r===10&&c.s===2?3:0)+(c.r===2&&c.s===0?2:0)}
+function aiPlay(){
+  const s0=S;busy=true;S.msg="{c} denkt na…";V=view(S,"p");render();
+  setTimeout(()=>{
+    if(mode!=="ai"||S!==s0||S.over||S.turn!=="c"){busy=false;return}
+    const h=S.hand.c,n=S.table.length;let best=null,bs=-1e9;
+    const must=mustTakeIn(S.table,h,"c");
+    h.forEach((card,hi)=>{
+      const rest=h.filter((_,j)=>j!==hi);
+      for(let m=1;m<(1<<n);m++){
+        const idxs=[];for(let i=0;i<n;i++)if((m>>i)&1)idxs.push(i);
+        if(idxs.length>6)continue;
+        const items=idxs.map(i=>S.table[i]);
+        const tp=sum(items.map(it=>sum(it.cards.map(pts))));
+        if(capOK(card,items)){const sc=pts(card)+tp+(idxs.length===n?1.5:0)+Math.random()*.1;if(sc>bs){bs=sc;best={k:"cap",hi,idxs}}}
+        if(idxs.length<=3)for(const {T} of buildInfo(card,items,rest)){const sc=.35*(tp+pts(card)+1)+Math.random()*.1;if(sc>bs){bs=sc;best={k:"build",hi,idxs,T}}}
+      }
+      if(!must){const sc=-pts(card)*.9+Math.random()*.1;if(sc>bs){bs=sc;best={k:"trash",hi}}}
+    });
+    busy=false;
+    if(!best||!applyAction("c",best)){S.msg=doTrash("c",0);after()}
+  },900);
+}
+
+// ---------- player input ----------
+const connOK=()=>mode==="ai"||!!(conn&&conn.open);
+const myTurn=()=>!!(V&&!V.over&&V.turn==="p"&&!busy&&connOK());
+function tapHand(i){if(!myTurn())return;selH=selH===i?-1:i;render()}
+function tapTable(i){if(!myTurn())return;selT=selT.includes(i)?selT.filter(x=>x!==i):[...selT,i];render()}
+function act(k,T){
+  if(selH<0||!myTurn())return;
+  const a={k,hi:selH,idxs:selT.slice(),T};
+  selH=-1;selT=[];
+  if(mode==="guest"){busy=true;try{conn.send({t:"act",a})}catch(e){busy=false}render();return}
+  if(!applyAction("p",a))render();
+}
+function nextAct(k){
+  if(mode==="guest"){if(conn&&conn.open)conn.send({t:k});return}
+  if(!S||!S.over||!S.end)return;
+  if(k==="next"&&!S.end.fin)startRound();else if(k==="newmatch"&&S.end.fin)newMatch();else return;
+  selH=-1;selT=[];sync();
+  if(mode==="ai"&&S.turn==="c")aiPlay();
+}
+
+// ---------- screens ----------
+const show=id=>$(id).classList.remove("hide"),hide=id=>$(id).classList.add("hide");
+function toMenu(){["aistart","lobby","end"].forEach(hide);show("menu");render()}
+function showAiStart(){const n=cleanName($("name").value);if(n){myName=n;lsSet("rc_name",n)}hide("menu");show("aistart")}
+function startAi(s){mode="ai";oppName="Computer";S=newState();startRound(s);hide("aistart");selH=-1;selT=[];sync();if(S.turn==="c")aiPlay()}
+function needName(){
+  const n=cleanName($("name").value);
+  if(!n){$("joinHint").textContent="Vul eerst je naam in.";show("joinHint");$("name").focus();return false}
+  myName=n;lsSet("rc_name",n);return true;
+}
+function lobby(html){hide("menu");show("lobby");$("lobbyBody").innerHTML=html}
+function inviteLink(){return location.origin+location.pathname+"?join="+hostCode}
+function inviteText(){return myName+" daagt je uit voor een potje Royal Casino! Open de link of vul code "+hostCode+" in."}
+async function shareInvite(){
+  if(navigator.share){try{await navigator.share({title:"Royal Casino",text:inviteText(),url:inviteLink()});return}catch(e){if(e&&e.name==="AbortError")return}}
+  copyInvite();
+}
+async function copyInvite(){
+  const t=inviteText()+" "+inviteLink();
+  try{await navigator.clipboard.writeText(t);setHint("Gekopieerd. Plak het in WhatsApp of een ander bericht.")}catch(e){setHint("Kopiëren lukte niet. Stuur deze link: "+inviteLink())}
+}
+function setHint(t){const h=$("lobbyHint");if(h)h.textContent=t}
+function renderHostLobby(){
+  lobby('<p>Stuur je tegenstander deze uitnodiging. Houd dit scherm open tot die meedoet.</p><div class="code">'+hostCode+'</div><div class="acts"><button onclick="shareInvite()">Deel uitnodiging</button><button class="alt" onclick="copyInvite()">Kopieer link</button></div><p class="hint" id="lobbyHint">Wachten op tegenstander…</p>');
+}
+function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const s=document.createElement("script");s.src=PEERJS;s.onload=()=>res();s.onerror=()=>rej(new Error("load"));document.head.appendChild(s)})}
+function newCode(){const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<6;i++)s+=A[rnd(A.length)];return s}
+function normCode(c){return String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6)}
+
+// ---------- online: host ----------
+async function hostGame(){
+  if(!needName())return;
+  mode="host";S=newState();V=null;oppName="Tegenstander";guestId=null;conn=null;connState="";
+  lobby("<p>Verbinden…</p>");
+  try{await loadPeer()}catch(e){lobby("<p>De online-module kon niet laden. Heb je internet?</p>");return}
+  if(mode!=="host")return;
+  hostCode=newCode();
+  const p=new Peer(PFX+hostCode);peer=p;
+  p.on("open",()=>{if(peer===p&&!V)renderHostLobby();render()});
+  p.on("disconnected",()=>{if(peer===p&&!p.destroyed)setTimeout(()=>{try{p.reconnect()}catch(e){}},1000)});
+  p.on("error",e=>{
+    if(peer!==p)return;
+    if(e.type==="unavailable-id"&&!V){p.destroy();peer=null;hostGame();return}
+    if(e.type==="network"||e.type==="server-error"||e.type==="socket-error"||e.type==="socket-closed"){render();return}
+    if(!V)lobby("<p>Er ging iets mis met de verbinding ("+esc(e.type||"onbekend")+"). Probeer het opnieuw.</p>");
+  });
+  p.on("connection",c=>{
+    c.on("data",d=>{
+      if(peer!==p)return;
+      if(c!==conn){
+        if(!d||d.t!=="hello")return;
+        if(!guestId||d.gid===guestId||!(conn&&conn.open)){
+          const old=conn;conn=c;guestId=d.gid;if(old&&old!==c){try{old.close()}catch(e){}}
+          connState="ok";c.send({t:"hello",name:myName});
+          oppName=cleanName(d.name)||"Tegenstander";
+          if(!S.round)startRound(rnd(2)?"p":"c");
+          hide("lobby");selH=-1;selT=[];sync();
+        }else{c.send({t:"busy"});setTimeout(()=>{try{c.close()}catch(e){}},500)}
+        return;
+      }
+      onData(d);
+    });
+    c.on("close",()=>{if(conn===c&&connState!=="left"){connState="lost";render()}});
+    c.on("error",()=>{});
+  });
+}
+
+// ---------- online: guest ----------
+async function joinGame(code){
+  code=normCode(code);
+  if(code.length!==6){$("joinHint").textContent="Een code bestaat uit 6 tekens.";show("joinHint");return}
+  if(!needName())return;
+  mode="guest";joinCode=code;S=null;V=null;oppName="Tegenstander";conn=null;connState="";
+  lobby("<p>Verbinden met spel "+code+"…</p>");
+  try{await loadPeer()}catch(e){lobby("<p>De online-module kon niet laden. Heb je internet?</p>");return}
+  if(mode!=="guest")return;
+  const p=new Peer();peer=p;
+  p.on("open",()=>{if(peer===p)connectToHost()});
+  p.on("disconnected",()=>{if(peer===p&&!p.destroyed)setTimeout(()=>{try{p.reconnect()}catch(e){}},1000)});
+  p.on("error",e=>{
+    if(peer!==p)return;
+    if(e.type==="peer-unavailable"){
+      if(!V){lobby("<p>Spel "+joinCode+" niet gevonden. Controleer de code, of vraag je tegenstander het spel open te houden.</p><div class=\"acts\"><button onclick=\"retryJoin()\">Opnieuw proberen</button></div>");return}
+      connState="lost";render();scheduleReconnect();return;
+    }
+    if(V){connState="lost";render();scheduleReconnect()}
+  });
+}
+function retryJoin(){lobby("<p>Verbinden met spel "+joinCode+"…</p>");if(peer&&!peer.destroyed){if(peer.disconnected)peer.reconnect();else connectToHost()}else joinGame(joinCode)}
+function connectToHost(){
+  if(!peer||peer.destroyed||peer.disconnected)return;
+  if(conn&&conn.open)return;
+  const c=peer.connect(PFX+joinCode,{reliable:true});conn=c;
+  c.on("open",()=>{if(conn!==c)return;connState="ok";c.send({t:"hello",name:myName,gid});render()});
+  c.on("data",d=>{if(conn===c)onData(d)});
+  c.on("close",()=>{if(conn===c&&connState!=="left"){connState="lost";render();scheduleReconnect()}});
+  c.on("error",()=>{});
+}
+function scheduleReconnect(){
+  if(rcT||mode!=="guest"||connState==="left")return;
+  rcT=setTimeout(()=>{rcT=null;if(mode!=="guest"||(conn&&conn.open)||connState==="left")return;
+    if(document.hidden){return}
+    if(!peer||peer.destroyed){return}
+    if(peer.disconnected){try{peer.reconnect()}catch(e){}}else connectToHost();
+    scheduleReconnect();
+  },3000);
+}
+
+// ---------- shared message handling ----------
+function onData(d){
+  if(!d||typeof d!=="object")return;
+  if(d.t==="hello"){oppName=cleanName(d.name)||"Tegenstander";render()}
+  else if(d.t==="state"&&mode==="guest"){V=d.v;busy=false;selH=-1;selT=[];hide("lobby");hide("menu");render()}
+  else if(d.t==="act"&&mode==="host"){if(!applyAction("c",d.a))sync()}
+  else if(d.t==="next"&&mode==="host"){nextAct("next")}
+  else if(d.t==="newmatch"&&mode==="host"){nextAct("newmatch")}
+  else if(d.t==="busy"&&mode==="guest"){connState="left";lobby("<p>Dit spel heeft al twee spelers.</p>")}
+  else if(d.t==="bye"){connState="left";render()}
+}
+function leave(force){
+  if(!force&&V&&V.round>0&&!(V.end&&V.end.fin)&&!confirm("Wil je dit spel verlaten?"))return;
+  const p=peer,c=conn;
+  try{if(c&&c.open)c.send({t:"bye"})}catch(e){}
+  setTimeout(()=>{try{p&&p.destroy()}catch(e){}},300);
+  if(rcT){clearTimeout(rcT);rcT=null}
+  peer=null;conn=null;mode=null;S=null;V=null;oppName="Computer";connState="";busy=false;selH=-1;selT=[];hostCode=null;
+  if(location.search)history.replaceState(null,"",location.pathname);
+  toMenu();
+}
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden||!peer||peer.destroyed)return;
+  if(peer.disconnected){try{peer.reconnect()}catch(e){}}
+  if(mode==="guest"&&!(conn&&conn.open)&&connState!=="left"){connState="lost";render();scheduleReconnect()}
+});
+
+// ---------- render ----------
+function N(t,html){const o=html?esc(oppName):oppName;return String(t||"").replace(/\{p\}/g,"Jij").replace(/\{c\}/g,o)}
+const c2=c=>'<span class="c2 '+(c.s===1||c.s===2?"r":"")+'">'+cn(c)+"</span>";
+function cardHTML(c,cls,click){return '<div class="card '+(c.s===1||c.s===2?"r ":"")+cls+'" onclick="'+click+'">'+RL[c.r]+"<span>"+SU[c.s]+"</span></div>"}
+function renderStatus(){
+  const el=$("status");let h="",bad=false;
+  if(mode==="host"&&V){
+    if(connState==="ok")h="Online met "+esc(oppName);
+    else{bad=true;h=(connState==="left"?esc(oppName)+" heeft het spel verlaten.":"Verbinding met "+esc(oppName)+" verbroken.")+" Wachten tot "+esc(oppName)+" terugkomt met code <b>"+hostCode+"</b>…"}
+    if(peer&&peer.disconnected){bad=true;h="Geen verbinding met de server. Opnieuw verbinden…"}
+  }else if(mode==="guest"&&V){
+    if(connState==="ok")h="Online met "+esc(oppName);
+    else if(connState==="left"){bad=true;h=esc(oppName)+" heeft het spel verlaten."}
+    else{bad=true;h="Verbinding verbroken. Opnieuw verbinden… <button class=\"small\" onclick=\"retryJoin()\">Nu proberen</button>"}
+  }
+  el.innerHTML=h;el.classList.toggle("hide",!h);el.classList.toggle("bad",bad);
+}
+function render(){
+  const inGame=!!(V&&V.round>0);
+  $("game").classList.toggle("hide",!inGame);
+  $("menuBtn").classList.toggle("hide",!mode);
+  $("score").textContent=inGame?"Jij "+V.tot.p+" – "+oppName+" "+V.tot.c:"";
+  renderStatus();
+  if(!inGame){hide("end");return}
+  $("info").textContent="Ronde "+V.round+" · stapel: "+V.deckN+" · jouw stapel: "+V.pileN.p+" · "+oppName+": "+V.pileN.c+" · tafel leeg: "+V.clr.p+"–"+V.clr.c;
+  $("opp").innerHTML=Array.from({length:V.oppN},()=>'<div class="card back"></div>').join("");
+  $("table").innerHTML=V.table.map((it,i)=>{
+    const sel=selT.includes(i)?" sel":"";
+    if(it.val)return '<div class="build'+sel+'" onclick="tapTable('+i+')"><div class="bv">'+it.val+(it.multi?" dubbel":"")+(it.owner==="p"?" (jij)":" ("+esc(oppName)+")")+'</div><div class="mini">'+it.cards.map(c=>'<span class="'+(c.s===1||c.s===2?"r":"")+'">'+cn(c)+"</span>").join("")+"</div></div>";
+    return cardHTML(it.cards[0],sel,"tapTable("+i+")");
+  }).join("");
+  $("mine").innerHTML=V.hand.map((c,i)=>cardHTML(c,selH===i?"sel":"","tapHand("+i+")")).join("");
+  const t=$("turn");
+  if(V.over){t.textContent="";t.className=""}
+  else if(V.turn==="p"){t.textContent=busy?"Even geduld…":"Jouw beurt";t.className="me"}
+  else{t.textContent=oppName+" is aan de beurt";t.className=""}
+  $("msg").textContent=N(V.msg);
+  const lm=V.lastMove;
+  $("last").innerHTML=lm?'<div class="lm"><b>'+N("{"+lm.who+"}",1)+(lm.k==="cap"?" pakt":lm.k==="build"?" bouwt":" legt neer")+':</b><div class="row">'+(lm.k==="cap"?lm.cards.map(c2).join("")+"<span>met</span>"+c2(lm.card):lm.k==="build"?c2(lm.card)+"<span>op</span>"+lm.cards.map(c2).join(""):c2(lm.card))+"</div></div>":"";
+  let a="";
+  if(myTurn()&&selH>=0&&selH<V.hand.length){
+    const card=V.hand[selH],items=selT.map(i=>V.table[i]).filter(Boolean),rest=V.hand.filter((_,j)=>j!==selH);
+    if(capOK(card,items))a+='<button onclick="act(\'cap\')">Pak mee</button>';
+    for(const b of buildInfo(card,items,rest))a+='<button class="alt" onclick="act(\'build\','+b.T+')">Bouw '+b.T+(b.multi?" (dubbel)":"")+"</button>";
+    if(mustTakeIn(V.table,V.hand,"p"))a+='<button class="alt" disabled>Leg neer</button><div style="width:100%;text-align:center;font-size:.8rem;color:var(--muted)">Je hebt een bouwsel: pak dat eerst mee voordat je iets neerlegt.</div>';
+    else a+='<button class="alt" onclick="act(\'trash\')">Leg neer</button>';
+  }
+  $("acts").innerHTML=a;
+  const E=V.end,end=$("end");
+  if(V.over&&E){
+    const on=esc(oppName);
+    let h="<h2>Ronde "+E.round+" voorbij</h2>"+(E.note?"<p>"+N(E.note,1)+"</p>":"")+"<p>"+E.lines.map(l=>N(l,1)).join("<br>")+"</p><p><b>Deze ronde: Jij "+E.g.p+" – "+on+" "+E.g.c+"</b><br>Totaal: Jij "+E.tot.p+" – "+on+" "+E.tot.c+"</p>";
+    if(E.fin)h+="<p><b>"+(E.tot.p>E.tot.c?"Jij wint het spel! 🎉":on+" wint het spel.")+"</b></p><button onclick=\"nextAct('newmatch')\""+(connOK()?"":" disabled")+">Nieuw spel</button>";
+    else{const ns=V.starter==="p"?"c":"p";h+="<button onclick=\"nextAct('next')\""+(connOK()?"":" disabled")+">Volgende ronde ("+(ns==="p"?"jij begint":on+" begint")+")</button>"}
+    end.innerHTML=h;show("end");
+  }else hide("end");
+}
+
+// ---------- start ----------
+$("name").value=myName;
+(function(){
+  const q=new URLSearchParams(location.search).get("join");
+  if(q){$("code").value=normCode(q);$("joinHint").textContent="Je bent uitgenodigd voor een potje! Vul je naam in en tik op Meedoen.";show("joinHint");if(!myName)$("name").focus()}
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  const standalone=navigator.standalone||matchMedia("(display-mode: standalone)").matches;
+  if(ios&&!standalone&&!q)show("a2hs");
+})();
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+render();
+</script>
+</body>
+</html>
