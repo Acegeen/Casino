@@ -49,6 +49,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,Bli
 .pile b{display:block;width:22px;height:30px;border-radius:4px;background:var(--back);box-shadow:2px 2px 0 rgba(0,0,0,.25),4px 4px 0 rgba(0,0,0,.12)}
 .pile.empty b{opacity:.25}
 .deck{justify-content:flex-end;text-align:right}
+.deck .dl{max-width:62px;line-height:1.2}
 #table{background:var(--felt);border-radius:14px;padding:10px;min-height:120px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-content:flex-start;transition:background .3s;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
 #table .card{width:58px}
 .build{border:3px solid transparent;border-radius:10px;background:rgba(0,0,0,.28);padding:4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-width:58px;-webkit-tap-highlight-color:transparent}
@@ -249,6 +250,7 @@ select{font:inherit;font-size:16px;width:100%;padding:8px 10px;border-radius:10p
 <div class="join"><input id="code" maxlength="6" placeholder="CODE" autocapitalize="characters" autocomplete="off" spellcheck="false"><button class="alt" onclick="joinGame($('code').value)">Meedoen</button></div>
 <p class="hint hide" id="joinHint"></p>
 <div class="links"><button class="link" onclick="openPanel('rules')">Spelregels</button><button class="link" onclick="openProfile('me')">Mijn profiel</button><button class="link" onclick="openPanel('badgesP')">Prestaties</button><button class="link" onclick="openPanel('stats')">Statistieken</button><button class="link" onclick="openPanel('settings')">Uiterlijk en geluid</button></div>
+<div class="links"><select id="langSel" onchange="setLang(this.value)" aria-label="Taal / Language / Idioma" style="width:auto;font-size:.85rem;padding:5px 8px"><option value="nl">🇳🇱 Nederlands</option><option value="en">🇬🇧 English</option><option value="es">🇲🇽 Español</option></select></div>
 <p class="hint hide" id="a2hs">Tip: tik in Safari op het deelicoon en kies ‘Zet op beginscherm’ om Ace Casino als app te installeren.</p>
 </div>
 
@@ -343,7 +345,12 @@ let peer=null,conn=null,hostCode=null,joinCode=null,guestId=null,connState="",rc
 let renderedMv=null,skipAnim=true,lastEmo=0;
 let turnStart=0,turnMv=null,deadline=0,pendingNote="",oppThink=-1,thinkSent=-2,lastTickSec=-1;
 let gid=lsGet("ac_gid");if(!gid){gid=Math.random().toString(36).slice(2)+Date.now().toString(36);lsSet("ac_gid",gid)}
-const SET=Object.assign({felt:0,back:0,sound:true,vibrate:true,anim:true,theme:"auto"},lsJSON("ac_set")||{});
+const SET=Object.assign({felt:0,back:0,sound:true,vibrate:true,anim:true,theme:"auto",lang:""},lsJSON("ac_set")||{});
+// ================= talen =================
+const LANGS={nl:"Nederlands",en:"English",es:"Español"};
+let LANG=SET.lang||((navigator.language||"nl").slice(0,2)==="es"?"es":(navigator.language||"nl").slice(0,2)==="en"?"en":"nl");
+const LOCALE=()=>LANG==="en"?"en-GB":LANG==="es"?"es-419":"nl-NL";
+const I18N={en:{d:{},p:[],r:[]},es:{d:{},p:[],r:[]}};
 
 // ================= regels =================
 const cn=c=>RL[c.r]+SU[c.s];
@@ -691,7 +698,7 @@ function renderTut(){
   const el=$("tut");
   if(mode!=="tut"){el.classList.add("hide");return}
   const st=TUT[tutI];el.classList.remove("hide");
-  el.innerHTML='<div class="step">Uitleg · stap '+(tutI+1)+" van "+TUT.length+"</div><h3>"+st.t+"</h3><div>"+st.x+"</div>"+(tutFb?'<div class="fb '+(tutFbGood?"good":"bad")+'">'+tutFb+"</div>":"")+'<div class="acts">'+(tutDone?'<button onclick="tutNext()">'+(st.last?"Afronden":"Volgende")+"</button>":"")+(tutI>0?'<button class="alt small" onclick="loadTut('+tutI+')">Opnieuw</button>':"")+'<button class="link small" onclick="leave(true)">Stoppen</button></div>';
+  el.innerHTML='<div class="step">Uitleg · stap '+(tutI+1)+" van "+TUT.length+"</div><h3>"+T(st.t)+"</h3><div>"+T(st.x)+"</div>"+(tutFb?'<div class="fb '+(tutFbGood?"good":"bad")+'">'+T(tutFb)+"</div>":"")+'<div class="acts">'+(tutDone?'<button onclick="tutNext()">'+(st.last?"Afronden":"Volgende")+"</button>":"")+(tutI>0?'<button class="alt small" onclick="loadTut('+tutI+')">Opnieuw</button>':"")+'<button class="link small" onclick="leave(true)">Stoppen</button></div>';
 }
 
 // ================= prestaties =================
@@ -741,7 +748,7 @@ function runToast(){
 }
 function renderBadges(){
   const b=getBadges(),n=BADGES.filter(x=>b[x[0]]).length;
-  $("badgesP").innerHTML="<h2>Prestaties</h2><p class=\"hint\" style=\"margin-top:0\">"+n+" van "+BADGES.length+" behaald. Spellen samen op één telefoon tellen niet mee.</p><div class=\"badges\">"+BADGES.map(x=>'<div class="badge'+(b[x[0]]?"":" off")+'"><span class="bicon">'+x[2]+"</span><b>"+esc(x[1])+"</b>"+esc(x[3])+(rewardFor(x[0])?"<small>🎁 "+esc(rewardFor(x[0]))+"</small>":"")+(b[x[0]]?"<small>"+new Date(b[x[0]]).toLocaleDateString("nl-NL")+"</small>":"")+"</div>").join("")+'</div><p><button class="link" onclick="closePanel(\'badgesP\')">Sluiten</button></p>';
+  $("badgesP").innerHTML="<h2>Prestaties</h2><p class=\"hint\" style=\"margin-top:0\">"+n+" van "+BADGES.length+" behaald. Spellen samen op één telefoon tellen niet mee.</p><div class=\"badges\">"+BADGES.map(x=>'<div class="badge'+(b[x[0]]?"":" off")+'"><span class="bicon">'+x[2]+"</span><b>"+esc(x[1])+"</b>"+esc(x[3])+(rewardFor(x[0])?"<small>🎁 "+esc(rewardFor(x[0]))+"</small>":"")+(b[x[0]]?"<small>"+new Date(b[x[0]]).toLocaleDateString(LOCALE())+"</small>":"")+"</div>").join("")+'</div><p><button class="link" onclick="closePanel(\'badgesP\')">Sluiten</button></p>';
 }
 const badgeMode=()=>mode==="ai"||mode==="host"||mode==="guest";
 function moveBadges(lm){
@@ -805,7 +812,7 @@ function renderStats(){
   h+='<p class="hint">Spellen samen op één telefoon tellen niet mee.</p><p><button class="link" onclick="resetStats()">Statistieken wissen</button> <button class="link" onclick="closePanel(\'stats\')">Sluiten</button></p>';
   $("stats").innerHTML=h;
 }
-function resetStats(){if(confirm("Alle statistieken wissen? Je prestaties blijven staan.")){lsDel("ac_stats");renderStats()}}
+function resetStats(){if(confirm(T("Alle statistieken wissen? Je prestaties blijven staan."))){lsDel("ac_stats");renderStats()}}
 
 // ================= schermen =================
 const show=id=>$(id).classList.remove("hide"),hide=id=>$(id).classList.add("hide");
@@ -838,7 +845,7 @@ function needName(){
 }
 function lobby(html){PANELS.forEach(hide);show("lobby");$("lobbyBody").innerHTML=html}
 function inviteLink(){return location.origin+location.pathname+"?join="+hostCode}
-function inviteText(){return myName+" daagt je uit voor een potje Ace Casino! Open de link of vul code "+hostCode+" in."}
+function inviteText(){return LANG==="en"?myName+" challenges you to a game of Ace Casino! Open the link or enter code "+hostCode+".":LANG==="es"?"¡"+myName+" te reta a una partida de Ace Casino! Abre el enlace o ingresa el código "+hostCode+".":myName+" daagt je uit voor een potje Ace Casino! Open de link of vul code "+hostCode+" in."}
 async function shareInvite(){
   if(navigator.share){try{await navigator.share({title:"Ace Casino",text:inviteText(),url:inviteLink()});return}catch(e){if(e&&e.name==="AbortError")return}}
   copyInvite();
@@ -887,7 +894,7 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyLo
 function saveSet(){lsSet("ac_set",JSON.stringify(SET));applyLook()}
 function renderSettings(){
   const tg=(k,l)=>'<div class="tg"><span>'+l+'</span><button class="small '+(SET[k]?"":"alt")+'" onclick="toggleSet(\''+k+'\')">'+(SET[k]?"Aan":"Uit")+"</button></div>";
-  $("settings").innerHTML="<h2>Uiterlijk en geluid</h2><label>Weergave</label><div class=\"seg\">"+Object.keys(THEMES).map(k=>'<button class="'+(SET.theme===k?"on":"")+'" onclick="setTheme(\''+k+'\')">'+THEMES[k]+"</button>").join("")+"</div><label>Speelkleed</label><div class=\"swatches\">"+FELTS.map((f,i)=>'<button class="sw'+(SET.felt===i?" on":"")+'" style="background:'+(isDark()?f[2]:f[1])+'" aria-label="'+f[0]+'" onclick="setLook(\'felt\','+i+')"></button>').join("")+"</div><label>Achterkant van de kaarten</label><div class=\"swatches\">"+BACKS.map((b,i)=>'<button class="sw cb'+(SET.back===i?" on":"")+'" style="background:'+b[1]+'" aria-label="'+b[0]+'" onclick="setLook(\'back\','+i+')"></button>').join("")+"</div>"+tg("sound","Geluid")+tg("vibrate","Trillen")+tg("anim","Animaties")+'<p class="hint">Automatisch volgt de instelling van je telefoon. Trillen werkt op een iPhone vanaf iOS 18.</p><p><button class="link" onclick="closePanel(\'settings\')">Sluiten</button></p>';
+  $("settings").innerHTML="<h2>Uiterlijk en geluid</h2><label>Taal · Language · Idioma</label><div class=\"seg\">"+Object.keys(LANGS).map(k=>'<button class="'+(LANG===k?"on":"")+'" onclick="setLang(\''+k+'\')">'+LANGS[k]+"</button>").join("")+"</div><label>Weergave</label><div class=\"seg\">"+Object.keys(THEMES).map(k=>'<button class="'+(SET.theme===k?"on":"")+'" onclick="setTheme(\''+k+'\')">'+THEMES[k]+"</button>").join("")+"</div><label>Speelkleed</label><div class=\"swatches\">"+FELTS.map((f,i)=>'<button class="sw'+(SET.felt===i?" on":"")+'" style="background:'+(isDark()?f[2]:f[1])+'" aria-label="'+f[0]+'" onclick="setLook(\'felt\','+i+')"></button>').join("")+"</div><label>Achterkant van de kaarten</label><div class=\"swatches\">"+BACKS.map((b,i)=>'<button class="sw cb'+(SET.back===i?" on":"")+'" style="background:'+b[1]+'" aria-label="'+b[0]+'" onclick="setLook(\'back\','+i+')"></button>').join("")+"</div>"+tg("sound","Geluid")+tg("vibrate","Trillen")+tg("anim","Animaties")+'<p class="hint">Automatisch volgt de instelling van je telefoon. Trillen werkt op een iPhone vanaf iOS 18.</p><p><button class="link" onclick="closePanel(\'settings\')">Sluiten</button></p>';
 }
 function setTheme(k){SET.theme=k;saveSet();renderSettings()}
 function setLook(k,i){SET[k]=i;saveSet();renderSettings()}
@@ -1051,7 +1058,7 @@ function bubble(e,mine){
 }
 function leave(force){
   const active=V&&V.round>0&&!(V.end&&V.end.fin)&&mode!=="tut";
-  if(!force&&active&&!confirm("Terug naar het menu? Je kunt dit spel later hervatten."))return;
+  if(!force&&active&&!confirm(T("Terug naar het menu? Je kunt dit spel later hervatten.")))return;
   const p=peer,c=conn;
   if(mode==="host"&&V&&V.end&&V.end.fin)lsDel("ac_host");
   if(mode==="guest"&&V&&V.end&&V.end.fin)lsDel("ac_guest");
@@ -1144,11 +1151,10 @@ function bars(hist){
 }
 function lastMoveHTML(lm){
   if(!lm)return"";
-  const who="<b>"+N("{"+lm.who+"}",1)+"</b>";
-  let h;
-  if(lm.k==="cap")h=who+" pakt "+lm.cards.map(c2).join("")+" <span>met</span> "+c2(lm.card);
-  else if(lm.k==="build")h=who+" bouwt "+(lm.T||"")+(lm.multi?" (dubbel)":"")+": "+c2(lm.card)+" <span>op</span> "+lm.cards.map(c2).join("");
-  else h=who+" legt neer: "+c2(lm.card);
+  const who=N("{"+lm.who+"}",1);let h;
+  if(lm.k==="cap")h="<b>"+who+" pakt</b> "+lm.cards.map(c2).join("")+" <span>met</span> "+c2(lm.card);
+  else if(lm.k==="build")h="<b>"+who+" bouwt "+(lm.T||"")+(lm.multi?" (dubbel)":"")+":</b> "+c2(lm.card)+" <span>op</span> "+lm.cards.map(c2).join("");
+  else h="<b>"+who+" legt neer:</b> "+c2(lm.card);
   if(lm.extra)h+='<span class="tag">'+N(lm.extra,1)+"</span>";
   return '<div class="lm">'+h+"</div>";
 }
@@ -1203,7 +1209,7 @@ function render(){
   const doAnim=fresh&&!skipAnim&&animOn();
   const before=doAnim?snap():null;
   $("info").textContent=mode==="tut"?"Oefenen zonder punten":"Ronde "+V.round+(mode==="ai"?" · "+DIFF[diff]:mode==="local"?" · samen op één telefoon":mode?" · online":"");
-  $("deckpos").className="pile deck"+(V.deckN?"":" empty");$("deckpos").innerHTML="<span>"+(V.deckN?"Nog<br>"+Math.round(V.deckN/8)+"× delen":"Laatste<br>hand")+"</span><b></b>";
+  $("deckpos").className="pile deck"+(V.deckN?"":" empty");$("deckpos").innerHTML='<span class="dl">'+(V.deckN?"Nog "+Math.round(V.deckN/8)+"× delen":"Laatste hand")+"</span><b></b>";
   $("pileOpp").className="pile"+(V.pileS.c.n?"":" empty");$("pileOpp").innerHTML='<button class="pav" onclick="openProfile(\'opp\')" aria-label="Profiel van '+esc(oppName)+'">'+avatarSVG(avFor("opp"),36)+"</button><b></b><span>"+esc(oppName)+"<br>"+V.pileS.c.n+"</span>";
   $("pileMe").className="pile"+(V.pileS.p.n?"":" empty");$("pileMe").innerHTML='<button class="pav" onclick="openProfile(\'me\')" aria-label="Mijn profiel">'+avatarSVG(avFor("me"),36)+"</button><b></b><span>"+esc(meLabel())+"<br>"+V.pileS.p.n+"</span>";
   $("opp").innerHTML=Array.from({length:V.oppN},(_,i)=>'<div class="card back'+(i===oppThink?" think":"")+'" data-cid="b'+i+'"></div>').join("");
@@ -1563,7 +1569,7 @@ function openProfile(side){
     const sel=(name,cur,emptyLbl)=>'<select onchange="setProf(\''+name+'\',this.value)"><option value="">'+emptyLbl+"</option>"+earned.map(x=>'<option value="'+x[0]+'"'+(cur===x[0]?" selected":"")+">"+esc(x[1])+"</option>").join("")+"</select>";
     h='<div class="pc-top">'+avatarSVG(P.av,110)+'<div><div class="pc-name">'+esc(myName||"Jij")+'</div><div class="pc-title">'+(P.title?esc(badgeName(P.title)):"Geen titel")+'</div><button class="small" onclick="closeProfile();openAvatar()">Avatar aanpassen</button></div></div>';
     h+="<h3>Titel</h3>"+sel("title",p.title,"Geen titel")+"<h3>Vitrine ("+P.n+" van "+BADGES.length+" behaald)</h3>"+vit(P.show)+'<div class="pc-sel">'+[0,1,2].map(i=>sel("show"+i,p.show[i]||"","Leeg vak "+(i+1))).join("")+"</div>";
-    h+="<h3>Cijfers</h3>"+row("Gespeelde spellen",P.games)+row("Winstpercentage",pct(P.wins,P.games))+row("Langste winstreeks",P.streak)+row("Hoogste eindscore",P.best)+row("Tafel leeggemaakt",P.clears)+row("Azen gepakt",P.aces)+row("Speler sinds",new Date(P.since).toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}));
+    h+="<h3>Cijfers</h3>"+row("Gespeelde spellen",P.games)+row("Winstpercentage",pct(P.wins,P.games))+row("Langste winstreeks",P.streak)+row("Hoogste eindscore",P.best)+row("Tafel leeggemaakt",P.clears)+row("Azen gepakt",P.aces)+row("Speler sinds",new Date(P.since).toLocaleDateString(LOCALE(),{day:"numeric",month:"long",year:"numeric"}));
   }else if(side==="opp"&&mode==="ai"){
     h='<div class="pc-top">'+avatarSVG(AIAV[diff],110)+'<div><div class="pc-name">Computer</div><div class="pc-title">'+DIFF[diff]+"</div></div></div><p>"+AIBIO[diff]+"</p>";
     const st=getStats();h+="<h3>Jouw stand tegen dit niveau</h3>"+row("Jij – Computer",st.ai[diff].w+" – "+st.ai[diff].l);
@@ -1574,7 +1580,7 @@ function openProfile(side){
     const P=oppProf,st=getStats(),o=st.online[oppName]||{w:0,l:0};
     h='<div class="pc-top">'+avatarSVG(avFor("opp"),110)+'<div><div class="pc-name">'+esc(oppName)+'</div><div class="pc-title">'+(P&&P.title?esc(badgeName(P.title)):"Geen titel")+"</div></div></div>";
     h+="<h3>Onderlinge stand</h3>"+row("Jij – "+esc(oppName),o.w+" – "+o.l)+(o.last?row("Laatste spel",o.last==="w"?"Jij won":esc(oppName)+" won"):"");
-    if(P){h+="<h3>Vitrine ("+P.n+" van "+BADGES.length+" behaald)</h3>"+vit(P.show)+"<h3>Cijfers</h3>"+row("Gespeelde spellen",P.games)+row("Winstpercentage",pct(P.wins,P.games))+row("Langste winstreeks",P.streak)+row("Hoogste eindscore",P.best)+row("Tafel leeggemaakt",P.clears)+row("Azen gepakt",P.aces)+(P.since?row("Speler sinds",new Date(P.since).toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"})):"")}
+    if(P){h+="<h3>Vitrine ("+P.n+" van "+BADGES.length+" behaald)</h3>"+vit(P.show)+"<h3>Cijfers</h3>"+row("Gespeelde spellen",P.games)+row("Winstpercentage",pct(P.wins,P.games))+row("Langste winstreeks",P.streak)+row("Hoogste eindscore",P.best)+row("Tafel leeggemaakt",P.clears)+row("Azen gepakt",P.aces)+(P.since?row("Speler sinds",new Date(P.since).toLocaleDateString(LOCALE(),{day:"numeric",month:"long",year:"numeric"})):"")}
     else h+='<p class="hint">Het profiel van je tegenstander komt binnen zodra jullie verbonden zijn.</p>';
   }
   $("pcBody").innerHTML=h;show("profileCard");
@@ -1598,11 +1604,12 @@ function renderAvatarMaker(){
     const pal=PAL[cat[2]];
     h+='<div class="swatches">'+pal.map((p,i)=>{const col=Array.isArray(p)?p[1]:p;return'<button class="sw'+(avDraft[avTab]===i?" on":"")+'" style="background:'+col+'" aria-label="'+(Array.isArray(p)?p[0]:"Kleur "+(i+1))+'" onclick="avSet(\''+avTab+"',"+i+')"></button>'}).join("")+"</div>";
   }else{
-    h+='<div class="av-grid">'+cat[2].map(([v,l])=>{const lock=!isUnlocked(avTab,v,b),bid=UNLOCK[avTab+":"+v];const prev={...avDraft,[avTab]:v};return'<button class="av-opt'+(avDraft[avTab]===v?" on":"")+(lock?" locked":"")+'" onclick="'+(lock?"avLocked('"+bid+"')":"avSet('"+avTab+"','"+v+"')")+'">'+avatarSVG(prev,64)+"<span>"+l+(lock?" 🔒":"")+"</span></button>"}).join("")+"</div>";
+    h+='<div class="av-grid">'+cat[2].map(([v,l])=>{const lock=!isUnlocked(avTab,v,b),bid=UNLOCK[avTab+":"+v];const prev={...avDraft,[avTab]:v};return'<button class="av-opt'+(avDraft[avTab]===v?" on":"")+(lock?" locked":"")+'" onclick="'+(lock?"avLocked('"+bid+"')":"avSet('"+avTab+"','"+v+"')")+'">'+avatarSVG(prev,64)+"<span>"+avLabel(avTab,v,l)+(lock?" 🔒":"")+"</span></button>"}).join("")+"</div>";
   }
   h+='</div><p class="hint" id="avHint">'+((avTab==="hair"||avTab==="hairColor")&&COVER.has(avDraft.hat)?"Je kapsel zit verborgen onder je "+optName("hat",avDraft.hat).toLowerCase()+". Kies bij Hoofddeksel ‘Geen’ om het weer te zien.":"")+'</p><div class="acts" style="margin-top:10px"><button onclick="avSave()">Opslaan</button><button class="alt" onclick="toMenu()">Annuleren</button></div>';
   $("avatarP").innerHTML=h;
 }
+function avLabel(k,v,l){if(LANG==="nl"||!window.AVT_TR||!AVT_TR[k]||!AVT_TR[k][v])return l;return AVT_TR[k][v][LANG==="en"?0:1]}
 function avSet(k,v){avDraft[k]=v;renderAvatarMaker()}
 function avLocked(bid){const b=BADGES.find(x=>x[0]===bid);$("avHint").textContent=b?"🔒 Behaal de prestatie ‘"+b[1]+"’ om dit vrij te spelen: "+b[3].charAt(0).toLowerCase()+b[3].slice(1)+".":""}
 function avRandom(){
@@ -1616,8 +1623,342 @@ function avRandom(){
 function avSave(){lsSet("ac_avatar",JSON.stringify(normAv(avDraft)));toMenu()}
 function renderMenuMe(){const el=$("meAv");if(el)el.innerHTML=avatarSVG(myAv(),58)}
 
+// ================= vertaalmotor =================
+const ME_NAMES={en:"You",es:"Tú"};
+function trName(s){if(LANG==="nl")return s;if(s==="Jij")return ME_NAMES[LANG];if(s==="jij")return ME_NAMES[LANG].toLowerCase();const d=I18N[LANG].d;return d[s]&&/^(Computer|Tegenstander|Speler 1|Speler 2)$/.test(s)?d[s]:s}
+const isMe=s=>s==="Jij"||s==="jij";
+function T(s){
+  if(LANG==="nl"||s==null)return s;
+  const str=String(s),m=str.match(/^(\s*)([\s\S]*?)(\s*)$/),core=m[2];
+  if(!core)return str;
+  const L=I18N[LANG];
+  if(Object.prototype.hasOwnProperty.call(L.d,core))return m[1]+L.d[core]+m[3];
+  if(core.includes(" · ")&&!core.includes("<"))return m[1]+core.split(" · ").map(x=>T(x)).join(" · ")+m[3];
+  for(const [re,rep] of L.p){const mm=core.match(re);if(mm)return m[1]+(typeof rep==="function"?rep(...mm):core.replace(re,rep))+m[3]}
+  let out=core,hit=false;for(const [re,rep] of L.r){const n=out.replace(re,rep);if(n!==out){out=n;hit=true}}
+  return hit?m[1]+out+m[3]:str;
+}
+const ORIG=new WeakMap(),DONE=new WeakMap(),DLANG=new WeakMap();
+function trNode(n){
+  if(n.nodeType===3){
+    const p=n.parentNode;if(!p||/^(SCRIPT|STYLE)$/.test(p.nodeName))return;
+    if(DONE.get(n)===n.data&&DLANG.get(n)===LANG)return;
+    if(!ORIG.has(n)||DONE.get(n)!==n.data)ORIG.set(n,n.data);
+    DLANG.set(n,LANG);
+    const o=ORIG.get(n);if(!/[A-Za-zÀ-ÿ]/.test(o))return;
+    const t=LANG==="nl"?o:T(o);DONE.set(n,t);if(n.data!==t)n.data=t;
+  }else if(n.nodeType===1){
+    for(const at of["placeholder","aria-label","title"]){if(n.hasAttribute&&n.hasAttribute(at)){const key="data-nl-"+at;if(!n.hasAttribute(key))n.setAttribute(key,n.getAttribute(at));const o=n.getAttribute(key),t=LANG==="nl"?o:T(o);if(n.getAttribute(at)!==t)n.setAttribute(at,t)}}
+    if(n.id==="rules"&&RULES_HTML){if(!RULES_HTML.nl)RULES_HTML.nl=n.innerHTML;const want=RULES_HTML[LANG]||RULES_HTML.nl;if(n.__lang!==LANG){n.__lang=LANG;n.innerHTML=want;return}}
+    for(const c of n.childNodes)trNode(c);
+  }
+}
+let RULES_HTML={};
+const trObs=new MutationObserver(ms=>{for(const m of ms){if(m.type==="characterData")trNode(m.target);else m.addedNodes.forEach(trNode)}});
+function setRanks(){if(LANG==="nl"){RL[11]="B";RL[12]="V";RL[13]="K"}else{RL[11]="J";RL[12]="Q";RL[13]="K"}}
+function setLang(l){
+  if(!LANGS[l])return;LANG=l;SET.lang=l;lsSet("ac_set",JSON.stringify(SET));setRanks();
+  document.documentElement.lang=l==="es"?"es-419":l;
+  const sel=$("langSel");if(sel)sel.value=l;
+  $("rules").__lang=null;trNode(document.body);
+  if(!$("settings").classList.contains("hide"))renderSettings();
+  if(!$("badgesP").classList.contains("hide"))renderBadges();
+  if(!$("avatarP").classList.contains("hide"))renderAvatarMaker();
+  if(!$("stats").classList.contains("hide"))renderStats();
+  renderMenu();if(V){renderedMv=V.mv;render()}
+}
+
+// ================= vertalingen (en / es-419) =================
+(function(){
+// vaste teksten: [nederlands, engels, spaans]
+const TR=[
+["Ace Casino","Ace Casino","Ace Casino"],["Regels","Rules","Reglas"],["Menu","Menu","Menú"],
+["Je naam","Your name","Tu nombre"],["Hoe heet je?","What's your name?","¿Cómo te llamas?"],
+["Speel tegen de computer","Play against the computer","Jugar contra la computadora"],["Samen op deze telefoon","Together on this phone","Juntos en este teléfono"],
+["Speel online: nodig iemand uit","Play online: invite someone","Jugar en línea: invita a alguien"],["🎓 Leer het spel (uitleg)","🎓 Learn the game (tutorial)","🎓 Aprende a jugar (tutorial)"],
+["of doe online mee met een code","or join online with a code","o únete en línea con un código"],["CODE","CODE","CÓDIGO"],["Meedoen","Join","Unirme"],
+["Spelregels","Rules","Reglas"],["Mijn profiel","My profile","Mi perfil"],["Prestaties","Achievements","Logros"],["Statistieken","Statistics","Estadísticas"],["Uiterlijk en geluid","Look and sound","Apariencia y sonido"],
+["Tip: tik in Safari op het deelicoon en kies ‘Zet op beginscherm’ om Ace Casino als app te installeren.","Tip: in Safari, tap the share icon and choose ‘Add to Home Screen’ to install Ace Casino as an app.","Consejo: en Safari, toca el ícono de compartir y elige ‘Agregar a inicio’ para instalar Ace Casino como app."],
+["Avatar maken","Create avatar","Crear avatar"],["Tegen de computer","Against the computer","Contra la computadora"],["Niveau","Level","Nivel"],
+["Wie mag er beginnen in de eerste ronde? Daarna wisselt het elke ronde.","Who starts the first round? After that it alternates every round.","¿Quién empieza la primera ronda? Después se alterna cada ronda."],
+["Ik begin","I'll start","Empiezo yo"],["Computer begint","Computer starts","Empieza la computadora"],["Terug","Back","Volver"],
+["Jullie geven de telefoon na elke beurt door. Tussendoor verschijnt een scherm, zodat je elkaars kaarten niet ziet.","You pass the phone after every turn. A screen appears in between so you can't see each other's cards.","Se pasan el teléfono después de cada turno. Entre turnos aparece una pantalla para que no vean las cartas del otro."],
+["Speler 1","Player 1","Jugador 1"],["Speler 2","Player 2","Jugador 2"],["Naam speler 1","Player 1 name","Nombre del jugador 1"],["Naam speler 2","Player 2 name","Nombre del jugador 2"],
+["Wie begint de eerste ronde?","Who starts the first round?","¿Quién empieza la primera ronda?"],["Online spelen","Play online","Jugar en línea"],["Annuleren","Cancel","Cancelar"],
+["Makkelijk","Easy","Fácil"],["Normaal","Normal","Normal"],["Moeilijk","Hard","Difícil"],["online","online","en línea"],["Online","Online","En línea"],["samen op één telefoon","together on one phone","juntos en un teléfono"],
+["Jij","You","Tú"],["jij","you","tú"],["Computer","Computer","Computadora"],["Tegenstander","Opponent","Rival"],
+["Oefenen zonder punten","Practice without points","Práctica sin puntos"],["Laatste hand","Last hand","Última mano"],
+["Jouw beurt","Your turn","Tu turno"],["Even geduld…","One moment…","Un momento…"],["Computer denkt na","Computer is thinking","La computadora está pensando"],
+["met","with","con"],["op","on","sobre"],["Pak mee","Capture","Llevar"],["Leg neer","Lay down","Soltar"],
+["Je hebt een bouwsel: pak dat eerst mee voordat je iets neerlegt.","You have a build: capture it before you lay down a card.","Tienes una construcción: llévatela antes de soltar una carta."],
+["💡 Hint","💡 Hint","💡 Pista"],["↶ Ongedaan maken","↶ Undo","↶ Deshacer"],
+["Alle kaarten zijn gespeeld.","All cards have been played.","Se jugaron todas las cartas."],["Nieuwe kaarten gedeeld.","New cards dealt.","Se repartieron cartas nuevas."],["Zet ongedaan gemaakt.","Move undone.","Jugada deshecha."],
+["Tijd om! Deze zet is automatisch gespeeld.","Time's up! This move was played automatically.","¡Se acabó el tiempo! Esta jugada se hizo automáticamente."],
+["Tafel leeg! +1","Sweep! +1","¡Mesa limpia! +1"],
+["Uitslag bekijken","View results","Ver resultados"],["Nieuw spel","New game","Nueva partida"],["Revanche!","Rematch!","¡Revancha!"],
+["Scoreverloop","Score progress","Evolución del puntaje"],["↓ Scroll voor de details","↓ Scroll for details","↓ Desliza para ver los detalles"],
+["Elk blokje is een ronde. De gele lijn is de winstgrens van 21.","Each block is a round. The yellow line is the winning mark of 21.","Cada bloque es una ronda. La línea amarilla es la meta de 21."],
+["Geen punten deze ronde.","No points this round.","Sin puntos esta ronda."],["telt niet","doesn't count","no cuenta"],
+["Meeste kaarten","Most cards","Más cartas"],["Meeste schoppen","Most spades","Más picas"],["Schoppen 2","2 of spades","2 de picas"],["Ruiten 10","10 of diamonds","10 de diamantes"],
+["Geef de telefoon aan","Pass the phone to","Pásale el teléfono a"],
+["Prestatie behaald","Achievement unlocked","Logro desbloqueado"],["Verder","Continue","Continuar"],["Hervat spel","Resume game","Reanudar partida"],
+["Online spel hervatten","Resume online game","Reanudar partida en línea"],["Terug naar online spel","Back to online game","Volver a la partida en línea"],
+["Stuur je tegenstander deze uitnodiging. Houd dit scherm open tot die meedoet.","Send your opponent this invite. Keep this screen open until they join.","Envíale esta invitación a tu rival. Mantén esta pantalla abierta hasta que se una."],
+["Deel uitnodiging","Share invite","Compartir invitación"],["Kopieer link","Copy link","Copiar enlace"],["Wachten op tegenstander…","Waiting for opponent…","Esperando al rival…"],
+["Gekopieerd. Plak het in WhatsApp of een ander bericht.","Copied. Paste it into WhatsApp or another message.","Copiado. Pégalo en WhatsApp u otro mensaje."],
+["Verbinden…","Connecting…","Conectando…"],["De online-module kon niet laden. Heb je internet?","The online module couldn't load. Are you connected to the internet?","No se pudo cargar el módulo en línea. ¿Tienes internet?"],
+["Dit spel heeft al twee spelers.","This game already has two players.","Esta partida ya tiene dos jugadores."],["Hervatten lukt nu niet. Probeer het over een minuut opnieuw.","Can't resume right now. Try again in a minute.","No se puede reanudar ahora. Inténtalo de nuevo en un minuto."],
+["Opnieuw proberen","Try again","Intentar de nuevo"],["Een code bestaat uit 6 tekens.","A code has 6 characters.","Un código tiene 6 caracteres."],["Vul eerst je naam in.","Enter your name first.","Primero escribe tu nombre."],
+["Je bent uitgenodigd voor een potje! Vul je naam in en tik op Meedoen.","You've been invited to a game! Enter your name and tap Join.","¡Te invitaron a una partida! Escribe tu nombre y toca Unirme."],
+["Geen verbinding met de server. Opnieuw verbinden…","No connection to the server. Reconnecting…","Sin conexión con el servidor. Reconectando…"],["Verbinding verbroken. Opnieuw verbinden…","Connection lost. Reconnecting…","Se perdió la conexión. Reconectando…"],
+["Nu proberen","Try now","Intentar ahora"],["Deel","Share","Compartir"],
+["Volgende","Next","Siguiente"],["Afronden","Finish","Terminar"],["Opnieuw","Again","De nuevo"],["Stoppen","Stop","Salir"],
+["Dat mag wel, maar probeer deze keer de opdracht hierboven.","That's allowed, but this time try the task above.","Eso se puede, pero esta vez intenta la tarea de arriba."],
+["Bijna! Je kunt méér pakken: selecteer ook de 5♣ en de 4♥.","Almost! You can capture more: also select the 5♣ and the 4♥.","¡Casi! Puedes llevarte más: selecciona también el 5♣ y el 4♥."],
+["Dat is een gewoon bouwsel. Selecteer ook de 6♥ en de 5♦ om het dubbel te maken.","That's a regular build. Also select the 6♥ and the 5♦ to make it double.","Esa es una construcción normal. Selecciona también el 6♥ y el 5♦ para hacerla doble."],
+// statistieken en profiel
+["Records","Records","Récords"],["Gespeelde spellen","Games played","Partidas jugadas"],["Gespeelde rondes","Rounds played","Rondas jugadas"],["Hoogste eindscore","Highest final score","Puntaje final más alto"],
+["Meeste punten in één ronde","Most points in one round","Más puntos en una ronda"],["Keer de tafel leeggemaakt","Sweeps","Mesas limpias"],["Tafel leeggemaakt","Sweeps","Mesas limpias"],["Azen gepakt","Aces captured","Ases capturados"],["♦10 gepakt","♦10 captured","♦10 capturados"],
+["Langste winstreeks","Longest win streak","Racha de victorias más larga"],["Spellen samen op één telefoon tellen niet mee.","Games on one phone don't count.","Las partidas en un solo teléfono no cuentan."],
+["Nog geen online spellen gespeeld.","No online games played yet.","Todavía no hay partidas en línea."],["Statistieken wissen","Clear statistics","Borrar estadísticas"],["Sluiten","Close","Cerrar"],
+["Alle statistieken wissen? Je prestaties blijven staan.","Clear all statistics? Your achievements will be kept.","¿Borrar todas las estadísticas? Tus logros se conservan."],
+["Terug naar het menu? Je kunt dit spel later hervatten.","Back to the menu? You can resume this game later.","¿Volver al menú? Puedes reanudar esta partida más tarde."],
+["Titel","Title","Título"],["Geen titel","No title","Sin título"],["Cijfers","Numbers","Números"],["Winstpercentage","Win rate","Porcentaje de victorias"],["Speler sinds","Player since","Jugador desde"],
+["Avatar aanpassen","Edit avatar","Editar avatar"],["Nog geen prestaties in de vitrine.","No achievements in the showcase yet.","Aún no hay logros en la vitrina."],
+["Onderlinge stand","Head-to-head","Historial entre ustedes"],["Laatste spel","Last game","Última partida"],["Jouw stand tegen dit niveau","Your record against this level","Tu récord contra este nivel"],
+["Het profiel van je tegenstander komt binnen zodra jullie verbonden zijn.","Your opponent's profile arrives once you're connected.","El perfil de tu rival llega en cuanto estén conectados."],
+["Bij spelen op één telefoon krijgt elke speler een avatar op basis van de naam.","When playing on one phone, each player gets an avatar based on their name.","Al jugar en un solo teléfono, cada jugador recibe un avatar según su nombre."],
+["Speelt vooral voor de gezelligheid en mist wel eens een vangst.","Mostly plays for fun and sometimes misses a capture.","Juega sobre todo por diversión y a veces se le escapa una jugada."],
+["Pakt wat er te pakken valt en bouwt af en toe.","Captures what it can and builds now and then.","Se lleva lo que puede y construye de vez en cuando."],
+["Onthoudt elke gespeelde kaart en gunt je niets.","Remembers every card played and gives you nothing.","Recuerda cada carta jugada y no te regala nada."],
+// instellingen
+["Weergave","Display","Pantalla"],["Automatisch","Automatic","Automático"],["Licht","Light","Claro"],["Donker","Dark","Oscuro"],["Speelkleed","Table cloth","Tapete"],
+["Achterkant van de kaarten","Card backs","Reverso de las cartas"],["Geluid","Sound","Sonido"],["Trillen","Vibration","Vibración"],["Animaties","Animations","Animaciones"],["Aan","On","Sí"],["Uit","Off","No"],
+["Automatisch volgt de instelling van je telefoon. Trillen werkt op een iPhone vanaf iOS 18.","Automatic follows your phone's setting. Vibration works on iPhone from iOS 18.","Automático sigue la configuración de tu teléfono. La vibración funciona en iPhone desde iOS 18."],
+["Groen","Green","Verde"],["Blauw","Blue","Azul"],["Bordeaux","Burgundy","Vino"],["Paars","Purple","Morado"],["Antraciet","Charcoal","Carbón"],["Rood","Red","Rojo"],["Zwart-goud","Black & gold","Negro y dorado"],["Stippen","Dots","Puntos"],
+["Zwart","Black","Negro"],["Wit","White","Blanco"],["Geel","Yellow","Amarillo"],["Roze","Pink","Rosa"],["Oranje","Orange","Naranja"],["Grijs","Gray","Gris"],["Donkerbruin","Dark brown","Castaño oscuro"],["Bruin","Brown","Castaño"],["Blond","Blond","Rubio"],
+["🎲 Willekeurig","🎲 Random","🎲 Al azar"],["Opslaan","Save","Guardar"],
+["Gezicht","Face","Cara"],["Huidskleur","Skin tone","Tono de piel"],["Kapsel","Hairstyle","Peinado"],["Haarkleur","Hair color","Color de pelo"],["Ogen","Eyes","Ojos"],["Wenkbrauwen","Eyebrows","Cejas"],["Mond","Mouth","Boca"],
+["Gezichtshaar","Facial hair","Vello facial"],["Bril","Glasses","Lentes"],["Hoofddeksel","Headwear","Gorro"],["Kleur hoofddeksel","Headwear color","Color del gorro"],["Oorbellen","Earrings","Aretes"],["Ketting en meer","Necklace and more","Collar y más"],
+["Kleur shirt","Shirt color","Color de camiseta"],["Achtergrondkleur","Background color","Color de fondo"],["Achtergrond extra","Background extra","Fondo extra"],["Rand","Frame","Marco"],
+["Taal / Language / Idioma","Taal / Language / Idioma","Taal / Language / Idioma"]
+];
+// avatar-onderdelen per sleutel: [engels, spaans]
+const AVT={
+ face:{round:["Round","Redonda"],oval:["Oval","Ovalada"],square:["Square","Cuadrada"],heart:["Heart","Corazón"]},
+ hair:{bald:["Bald","Calvo"],short:["Short","Corto"],buzz:["Buzz cut","Rapado"],fringe:["Fringe","Flequillo"],long:["Long","Largo"],pony:["Ponytail","Cola de caballo"],bun:["Bun","Chongo"],afro:["Afro","Afro"],curlS:["Small coils","Rizos pequeños"],curlM:["Medium curls","Rizos medianos"],curlL:["Big curls","Rizos grandes"],curlShort:["Short curls","Rizos cortos"],curlFade:["Curls with fade","Rizos con degradado"],cornrows:["Cornrows","Trenzas pegadas"],braidsL:["Long box braids","Box braids largas"],braidsS:["Short box braids","Box braids cortas"],locsS:["Short locs","Rastas cortas"],locsL:["Long locs","Rastas largas"]},
+ eyes:{normal:["Normal","Normales"],happy:["Smiling","Sonrientes"],wink:["Wink","Guiño"],sleepy:["Sleepy","Somnolientos"],big:["Big","Grandes"]},
+ brows:{flat:["Straight","Rectas"],high:["Raised","Arqueadas"],angry:["Angry","Enojadas"],thick:["Thick","Gruesas"]},
+ mouth:{smile:["Smile","Sonrisa"],grin:["Grin","Sonrisa amplia"],laugh:["Open laugh","Carcajada"],neutral:["Neutral","Neutral"],tongue:["Tongue out","Lengua afuera"],smug:["Smug grin","Sonrisa presumida"],goldtooth:["Gold tooth","Diente de oro"]},
+ beard:{none:["None","Ninguno"],stubble:["Stubble","Barba de días"],mustache:["Mustache","Bigote"],full:["Full beard","Barba completa"],goateeMus:["Goatee with mustache","Candado"],goat:["Goat beard","Chivita"]},
+ glasses:{none:["None","Ninguno"],round:["Round","Redondos"],round_tint:["Round, medium tint","Redondos, tinte medio"],round_dark:["Round, dark tint","Redondos, tinte oscuro"],rect:["Rectangular","Rectangulares"],rect_tint:["Rectangular, medium tint","Rectangulares, tinte medio"],rect_dark:["Rectangular, dark tint","Rectangulares, tinte oscuro"],horn:["Horn-rimmed","De pasta"],horn_tint:["Horn-rimmed, medium tint","De pasta, tinte medio"],horn_dark:["Horn-rimmed, dark tint","De pasta, tinte oscuro"],monocle:["Monocle","Monóculo"],sun:["Sunglasses","Lentes de sol"]},
+ hat:{none:["None","Ninguno"],beanie:["Beanie","Gorro tejido"],cap:["Cap","Gorra"],capBack:["Backwards cap","Gorra al revés"],durag:["Durag","Durag"],bonnet:["Bonnet","Gorro de satín"],helm:["Hard hat","Casco de obra"],grad:["Graduation cap","Birrete"],crown:["Golden crown","Corona de oro"],chick:["Little chick","Pollito"],headband:["Fighter's headband","Banda de peleador"],fisher:["Bucket hat","Gorro de pescador"],pirate:["Pirate hat with eye patch","Sombrero pirata con parche"],sweat:["Sweatband","Banda deportiva"]},
+ ear:{none:["None","Ninguno"],silver:["Silver studs","Broqueles de plata"],goldring:["Gold hoops","Arracadas de oro"],spade:["Ace of spades","As de picas"],dice:["Dice","Dados"],diamond:["Diamond","Diamante"]},
+ neck:{none:["None","Ninguno"],silverchain:["Silver chain","Cadena de plata"],goldchain:["Gold chain","Cadena de oro"],medal:["Gold medal","Medalla de oro"],ribbon:["Ribbon with stars","Banda con estrellas"],clover:["Four-leaf clover pin","Pin de trébol"]},
+ bgPat:{none:["None","Ninguno"],glitter:["Glitter","Destellos"],spades:["Spades","Picas"],hourglass:["Hourglasses","Relojes de arena"],bolt:["Lightning","Rayos"],diamonds:["Diamonds","Rombos"]},
+ frame:{none:["None","Ninguno"],flames:["Flames","Llamas"],cards:["Golden cards","Cartas doradas"]}
+};
+// prestaties per sleutel: [naam en, omschrijving en, naam es, omschrijving es]
+const BT={
+ build:["Bob the Builder","Make your first build","Bob el Constructor","Haz tu primera construcción"],
+ clear1:["Beginner's Luck","Sweep the table for the first time","Suerte de principiante","Limpia la mesa por primera vez"],
+ tut:["You got this","Finish the interactive tutorial","¡Tú puedes!","Completa el tutorial interactivo"],
+ win1:["First W","Win your first game, against anyone","Primera W","Gana tu primera partida, contra quien sea"],
+ easy:["Little Player","Win on Easy","Jugador novato","Gana en Fácil"],
+ normal:["Serious Player","Win on Normal","Jugador serio","Gana en Normal"],
+ hard:["Nospang","Win on Hard","Nospang","Gana en Difícil"],
+ master:["Master","Win on Hard without hints or undo","Maestro","Gana en Difícil sin pistas ni deshacer"],
+ boss:["Final Boss","Win by at least 10 points","Jefe final","Gana por al menos 10 puntos"],
+ aces4:["Ace","Capture all four aces in one round","As","Llévate los cuatro ases en una ronda"],
+ big:["Big Catch","Capture 6 or more cards in one move","Gran botín","Llévate 6 o más cartas en una jugada"],
+ double:["Double or Nothing","Capture a double build","Doble o nada","Llévate una construcción doble"],
+ pirate:["Privateer","Capture your opponent's build","Corsario","Llévate la construcción de tu rival"],
+ clear3:["Table Polisher","Sweep the table 3 times in one round","Limpiamesas","Limpia la mesa 3 veces en una ronda"],
+ spades:["King of Spades","Capture 10 or more spades in one round","Rey de picas","Llévate 10 o más picas en una ronda"],
+ allin:["All or Nothing","Capture the ♦10, the ♠2 and the most cards in one round","Todo o nada","Llévate el ♦10, el ♠2 y la mayoría de cartas en una ronda"],
+ goat:["GOATed","Take every available point in one round","Nivel GOAT","Llévate todos los puntos posibles en una ronda"],
+ comeback:["GetBackGang","Win after being 10 or more points behind","GetBackGang","Gana después de ir perdiendo por 10 puntos o más"],
+ sprint:["Sprinter","Win while your opponent was already at 20","Velocista","Gana cuando tu rival ya tenía 20"],
+ long:["Finally","Win a game that lasted 8 or more rounds","¡Por fin!","Gana una partida de 8 rondas o más"],
+ revenge:["Sucks to Be You","Win an online rematch after losing the previous game","¡Toma eso!","Gana una revancha en línea después de perder la partida anterior"],
+ rival:["Rival Things","Play 10 online games against the same person","Cosas de rivales","Juega 10 partidas en línea contra la misma persona"],
+ fast:["Quick Hand","Play a whole online round with every move within 5 seconds","Mano rápida","Juega una ronda en línea completa con cada jugada en menos de 5 segundos"],
+ him:["Him","Win 5 games in a row","Him","Gana 5 partidas seguidas"],
+ vet:["Veteran","Play 50 games","Veterano","Juega 50 partidas"],
+ acesboss:["Ace Boss","Capture 100 aces in total","Jefe de ases","Llévate 100 ases en total"],
+ d10:["Diamond Hunter","Capture the ♦10 25 times in total","Cazador de diamantes","Llévate el ♦10 25 veces en total"]
+};
+// uitleg per stap: [titel en, tekst en, goed en, titel es, tekst es, goed es]
+const TUTT=[
+ ["Welcome to Ace Casino","You play against one opponent. Taking turns, you play one card from your hand. With it you capture cards from the table, build something, or lay a card down. The first to reach 21 points wins. In this tutorial you make each move yourself once.","",
+  "Bienvenido a Ace Casino","Juegas contra un rival. Por turnos, juegas una carta de tu mano. Con ella te llevas cartas de la mesa, construyes algo o sueltas una carta. Gana quien llegue primero a 21 puntos. En este tutorial haces cada jugada una vez.",""],
+ ["1. Capturing","Tap your <b>5♠</b> and then the <b>5♥</b> on the table. Then tap ‘Capture’.","Well done! The cards go to your pile (bottom left). Every card counts towards ‘most cards’.",
+  "1. Llevar","Toca tu <b>5♠</b> y luego el <b>5♥</b> de la mesa. Después toca ‘Llevar’.","¡Muy bien! Las cartas van a tu pila (abajo a la izquierda). Cada carta cuenta para ‘más cartas’."],
+ ["2. Several cards at once","Cards that add up to exactly the value of your card can be captured too. With your <b>9♠</b>, capture the <b>9♦</b> and the <b>5♣</b> + <b>4♥</b> in one go: select all three and tap ‘Capture’.","Great! Three cards with one card. The more, the better.",
+  "2. Varias cartas a la vez","También puedes llevarte cartas que juntas suman exactamente el valor de tu carta. Con tu <b>9♠</b>, llévate de una vez el <b>9♦</b> y el <b>5♣</b> + <b>4♥</b>: selecciona las tres y toca ‘Llevar’.","¡Excelente! Tres cartas con una sola. Mientras más, mejor."],
+ ["3. Building","You have a <b>5♥</b> and an <b>8♠</b>. Put the 5♥ on the <b>3♣</b>: together that makes 8. Select 5♥, tap 3♣ and choose ‘Build 8’. You may only build if you still have the card to capture it (here your 8♠) in your hand.","Your build of 8 is on the table. Watch out: your opponent may also capture it with an 8, or raise it.",
+  "3. Construir","Tienes un <b>5♥</b> y un <b>8♠</b>. Pon el 5♥ sobre el <b>3♣</b>: juntos suman 8. Selecciona 5♥, toca 3♣ y elige ‘Construir 8’. Solo puedes construir si todavía tienes en la mano la carta para llevártela (aquí tu 8♠).","Tu construcción de 8 está en la mesa. Ojo: tu rival también puede llevársela con un 8 o subirla."],
+ ["4. Capturing your build","Your opponent laid down a 2♦. Now capture your build with your <b>8♠</b>. As long as your build is on the table, you may not lay a card down.","Nice! Building is a way to secure cards for your next turn.",
+  "4. Llevarte tu construcción","Tu rival soltó un 2♦. Ahora llévate tu construcción con tu <b>8♠</b>. Mientras tu construcción esté en la mesa, no puedes soltar cartas.","¡Bien hecho! Construir es una forma de asegurar cartas para tu siguiente turno."],
+ ["5. Double build","Put your <b>7♠</b> with the <b>4♣</b> (= 11) and also choose the <b>6♥</b> + <b>5♦</b> (also 11). Select 7♠, tap 4♣, 6♥ and 5♦ and choose ‘Build 11 (double)’. You'll capture it later with your J♥ (11).","Nobody can raise a double build anymore. Your opponent can only capture it with an 11.",
+  "5. Construcción doble","Pon tu <b>7♠</b> con el <b>4♣</b> (= 11) y elige también el <b>6♥</b> + <b>5♦</b> (también 11). Selecciona 7♠, toca 4♣, 6♥ y 5♦ y elige ‘Construir 11 (doble)’. Después te la llevas con tu J♥ (11).","Nadie puede subir una construcción doble. Tu rival solo puede llevársela con un 11."],
+ ["6. Laying down","Sometimes you can't capture or build. Then lay a card face up on the table. Choose your <b>2♥</b> and tap ‘Lay down’. Better not lay down valuable cards, like aces, the ♦10 or spades.","Good. Your opponent can now capture that card, so always choose your least valuable card.",
+  "6. Soltar","A veces no puedes llevarte ni construir nada. Entonces suelta una carta boca arriba en la mesa. Elige tu <b>2♥</b> y toca ‘Soltar’. Mejor no sueltes cartas valiosas, como ases, el ♦10 o picas.","Bien. Ahora tu rival puede llevarse esa carta, así que elige siempre tu carta menos valiosa."],
+ ["7. Sweep","If you capture everything from the table in one move, you get an extra point. Capture the <b>6♠</b> and <b>4♥</b> with your <b>10♣</b>.","Sweep: +1 point! If your opponent sweeps the table afterwards, you lose that point again.",
+  "7. Mesa limpia","Si te llevas todo de la mesa en una jugada, ganas un punto extra. Llévate el <b>6♠</b> y el <b>4♥</b> con tu <b>10♣</b>.","¡Mesa limpia: +1 punto! Si tu rival limpia la mesa después, pierdes ese punto."],
+ ["8. Scoring","After every round you score points: <b>most cards 3</b>, <b>most spades 1</b>, <b>♦10 2</b>, <b>♠2 1</b>, <b>each ace 1</b> and <b>sweep 1</b>. Whoever captured last gets the rest of the table at the end. From 17 points only most cards and spades count, from 20 only spades. Ready to play!","",
+  "8. Puntaje","Después de cada ronda sumas puntos: <b>más cartas 3</b>, <b>más picas 1</b>, <b>♦10 2</b>, <b>♠2 1</b>, <b>cada as 1</b> y <b>mesa limpia 1</b>. Quien se llevó cartas por última vez se queda con el resto de la mesa al final. Desde 17 puntos solo cuentan más cartas y más picas; desde 20, solo más picas. ¡Listo para jugar!",""]
+];
+const RULES_EN=`
+<h2>Rules</h2>
+<p>Ace Casino is a card game for two players. You play several rounds; the first to reach 21 points wins.</p>
+<h3>Setup</h3>
+<p>You play with a regular 52-card deck. Each player gets 4 cards and 4 cards are placed face up on the table. When both of you are out of cards, everyone gets 4 new ones until the deck runs out. The player who starts switches every round.</p>
+<h3>Card values</h3>
+<p>2 through 10 count as their own value. Jack (J) = 11, Queen (Q) = 12, King (K) = 13. An ace counts as 1 or 14, whichever suits you best.</p>
+<h3>Your turn</h3>
+<p>Every turn you play exactly one card from your hand. With it you do one of these three things.</p>
+<p><b>1. Capturing.</b> You capture table cards with the same value as your card, or groups of cards that add up to exactly that value. You may capture several groups at once. With a <span class="ex"><span>9♠</span></span> you can, for example, capture <span class="ex"><span class="r">9♥</span></span>, <span class="ex"><span>5♣</span><span class="r">4♦</span></span> and <span class="ex"><span class="r">6♥</span><span>3♠</span></span> in one go. The captured cards go to your pile, together with your own card.</p>
+<p><b>2. Building.</b> You put your card on one or more table cards so a new value is formed: a build. You may only do this if you still have a card of that new value in your hand, because that's what you'll capture the build with later. Example: there's a <span class="ex"><span>3♣</span></span> on the table and you have <span class="ex"><span class="r">5♥</span></span> and <span class="ex"><span>8♠</span></span>. Put the 5 on the 3 and there's a build of 8.</p>
+<p><b>Builds are only captured as a whole.</b> You capture a build with a card of exactly its value. You may not add a build to other table cards. If there's a build of 8 and a loose 3, you may not capture them together with a J (11).</p>
+<p>A build belongs to everyone: your opponent may capture it with a card of that value, or raise it by adding a card, if they have the new value in their hand.</p>
+<p><b>Double build.</b> If a build consists of several groups with the same value, like <span class="ex"><span>6♠</span><span class="r">5♦</span></span> and <span class="ex"><span>4♣</span><span>7♠</span></span> (11 twice), it's double. Nobody can raise a double build; it can only be captured with a card of exactly that value.</p>
+<p><b>Your own build.</b> If there's a build of yours on the table and you have the card to capture it, you may not lay down a card until you've captured it. Capturing something else or building further is allowed.</p>
+<p><b>3. Laying down.</b> If you can't or don't want to capture or build, you lay a card face up on the table.</p>
+<h3>Sweep</h3>
+<p>If you capture all cards from the table in one move, you get 1 extra point. If your opponent then sweeps the table too, you lose that point again; your opponent gets nothing for it. Collecting the rest at the end of the round doesn't count as a sweep.</p>
+<h3>End of the round</h3>
+<p>When all cards have been played, the player who captured last gets the cards still on the table. Then you count the points.</p>
+<h3>Points per round</h3>
+<p>Most cards: 3 points. Most spades: 1 point. 10 of diamonds <span class="ex"><span class="r">10♦</span></span>: 2 points. 2 of spades <span class="ex"><span>2♠</span></span>: 1 point. Each ace: 1 point. Sweep: 1 point each time. If you have the same number of cards or spades, nobody gets that point.</p>
+<h3>Winning and the final sprint</h3>
+<p>The game continues until someone has 21 points or more. If you're tied at that moment, whoever was closer to 21 after the previous round wins (17 vs 13 after the previous round and now both 21: the player with 17 wins). If you were tied then too, you play one more round. From 17 points, only ‘most cards’ and ‘most spades’ count for you. From 20 points, only ‘most spades’ counts.</p>
+<h3>How to play in the app</h3>
+<p>Tap a card in your hand, then the table cards or builds you want to use. The buttons show what's possible: capture, build or lay down. Against the computer you can ask for a hint or undo your last move. Online you have 30 seconds per move; after that the app plays for you (capturing your own build if required, otherwise laying down your least valuable card). You can react with emojis at the bottom of the screen. Want to learn step by step? Choose ‘Learn the game’ in the menu.</p>
+<p><button class="link" onclick="closePanel('rules')">Close</button></p>
+`;
+const RULES_ES=`
+<h2>Reglas</h2>
+<p>Ace Casino es un juego de cartas para dos jugadores. Se juegan varias rondas; gana quien llegue primero a 21 puntos.</p>
+<h3>Preparación</h3>
+<p>Se juega con una baraja normal de 52 cartas. Cada jugador recibe 4 cartas y se ponen 4 cartas boca arriba en la mesa. Cuando a los dos se les acaban las cartas, cada uno recibe 4 nuevas, hasta que se acabe la baraja. Quien empieza cambia cada ronda.</p>
+<h3>Valor de las cartas</h3>
+<p>Del 2 al 10 valen su número. Jota (J) = 11, Reina (Q) = 12, Rey (K) = 13. El as vale 1 o 14, lo que más te convenga.</p>
+<h3>Tu turno</h3>
+<p>En cada turno juegas exactamente una carta de tu mano. Con ella haces una de estas tres cosas.</p>
+<p><b>1. Llevar.</b> Te llevas cartas de la mesa del mismo valor que tu carta, o grupos de cartas que juntas suman exactamente ese valor. Puedes llevarte varios grupos a la vez. Por ejemplo, con un <span class="ex"><span>9♠</span></span> te llevas de una vez <span class="ex"><span class="r">9♥</span></span>, <span class="ex"><span>5♣</span><span class="r">4♦</span></span> y <span class="ex"><span class="r">6♥</span><span>3♠</span></span>. Las cartas que te llevas van a tu pila, junto con tu propia carta.</p>
+<p><b>2. Construir.</b> Pones tu carta sobre una o más cartas de la mesa para formar un nuevo valor: una construcción. Solo puedes hacerlo si todavía tienes en la mano una carta de ese nuevo valor, porque con ella te llevarás la construcción después. Ejemplo: en la mesa hay un <span class="ex"><span>3♣</span></span> y tú tienes <span class="ex"><span class="r">5♥</span></span> y <span class="ex"><span>8♠</span></span>. Pon el 5 sobre el 3 y queda una construcción de 8.</p>
+<p><b>Las construcciones solo se llevan completas.</b> Una construcción te la llevas con una carta de exactamente su valor. No puedes sumar una construcción con otras cartas de la mesa. Si hay una construcción de 8 y un 3 suelto, no puedes llevártelos juntos con una J (11).</p>
+<p>Una construcción es de todos: tu rival puede llevársela con una carta de ese valor, o subirla agregando una carta, si tiene el nuevo valor en la mano.</p>
+<p><b>Construcción doble.</b> Si una construcción tiene varios grupos del mismo valor, como <span class="ex"><span>6♠</span><span class="r">5♦</span></span> y <span class="ex"><span>4♣</span><span>7♠</span></span> (dos veces 11), es doble. Nadie puede subir una construcción doble; solo se la lleva una carta de exactamente ese valor.</p>
+<p><b>Tu propia construcción.</b> Si tienes una construcción en la mesa y la carta para llevártela, no puedes soltar cartas hasta que te la lleves. Sí puedes llevarte otra cosa o seguir construyendo.</p>
+<p><b>3. Soltar.</b> Si no puedes o no quieres llevarte ni construir nada, sueltas una carta boca arriba en la mesa.</p>
+<h3>Mesa limpia</h3>
+<p>Si te llevas todas las cartas de la mesa en una jugada, ganas 1 punto extra. Si después tu rival también limpia la mesa, pierdes ese punto; tu rival no gana nada por eso. Recoger el resto al final de la ronda no cuenta como mesa limpia.</p>
+<h3>Fin de la ronda</h3>
+<p>Cuando se jugaron todas las cartas, el último jugador que se llevó algo se queda con las cartas que siguen en la mesa. Luego se cuentan los puntos.</p>
+<h3>Puntos por ronda</h3>
+<p>Más cartas: 3 puntos. Más picas: 1 punto. 10 de diamantes <span class="ex"><span class="r">10♦</span></span>: 2 puntos. 2 de picas <span class="ex"><span>2♠</span></span>: 1 punto. Cada as: 1 punto. Mesa limpia: 1 punto cada vez. Si tienen la misma cantidad de cartas o de picas, nadie se lleva ese punto.</p>
+<h3>Ganar y el sprint final</h3>
+<p>La partida sigue hasta que alguien tenga 21 puntos o más. Si en ese momento están empatados, gana quien estaba más cerca de 21 después de la ronda anterior (17 contra 13 en la ronda anterior y ahora ambos 21: gana el jugador que tenía 17). Si también estaban empatados, juegan una ronda más. Desde 17 puntos, solo cuentan para ti ‘más cartas’ y ‘más picas’. Desde 20 puntos, solo cuenta ‘más picas’.</p>
+<h3>Cómo jugar en la app</h3>
+<p>Toca una carta de tu mano y después las cartas o construcciones de la mesa que quieras usar. Los botones muestran lo que se puede: llevar, construir o soltar. Contra la computadora puedes pedir una pista o deshacer tu última jugada. En línea tienes 30 segundos por jugada; después la app juega por ti (se lleva tu propia construcción si hace falta; si no, suelta tu carta menos valiosa). Puedes reaccionar con emojis en la parte de abajo. ¿Quieres aprender paso a paso? Elige ‘Aprende a jugar’ en el menú.</p>
+<p><button class="link" onclick="closePanel('rules')">Cerrar</button></p>
+`;
+RULES_HTML.en=RULES_EN;RULES_HTML.es=RULES_ES;window.AVT_TR=AVT;
+const L={en:I18N.en,es:I18N.es};
+for(const [nl,en,es] of TR){L.en.d[nl]=en;L.es.d[nl]=es}
+for(const [k,,opts] of AVCAT){if(!Array.isArray(opts)||!AVT[k])continue;for(const [v,nl] of opts){const t=AVT[k][v];if(t&&!(nl in L.en.d)){L.en.d[nl]=t[0];L.es.d[nl]=t[1]}}}
+for(const pal of[HAIRC,CLOTH])for(const [nl] of pal){if(!L.en.d[nl]){}}
+for(const b of BADGES){const t=BT[b[0]];if(!t)continue;L.en.d[b[1]]=t[0];L.en.d[b[3]]=t[1];L.es.d[b[1]]=t[2];L.es.d[b[3]]=t[3]}
+TUT.forEach((st,i)=>{const t=TUTT[i];if(!t)return;L.en.d[st.t]=t[0];L.en.d[st.x]=t[1];if(st.good)L.en.d[st.good]=t[2];L.es.d[st.t]=t[3];L.es.d[st.x]=t[4];if(st.good)L.es.d[st.good]=t[5]});
+for(const [k,nl] of Object.entries(DIFF)){}
+// dynamische teksten
+const nm=s=>trName(s.trim());
+const lcFirst=s=>s.charAt(0).toLowerCase()+s.slice(1),ucFirst=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const findLower=(lang,x)=>{const d=L[lang].d;const k=Object.keys(d).find(k=>k.toLowerCase()===x.toLowerCase());return k?d[k].toLowerCase():x};
+const suf=(lang,s)=>s.replace(/ \(telt niet mee bij (\d+) punten\)/,lang==="en"?" (doesn't count at $1 points)":" (no cuenta con $1 puntos)");
+const itemsTr=(lang,s)=>s.replace(/bouwsel (\d+)/g,lang==="en"?"build $1":"construcción de $1");
+function pats(lang){const E=lang==="en";return[
+ [/^Ronde (\d+)$/,(m,a)=>(E?"Round ":"Ronda ")+a],
+ [/^Ronde (\d+) voorbij$/,(m,a)=>E?"Round "+a+" over":"Fin de la ronda "+a],
+ [/^Details van ronde (\d+)$/,(m,a)=>E?"Round "+a+" details":"Detalles de la ronda "+a],
+ [/^Uitleg$/,()=>E?"Tutorial":"Tutorial"],
+ [/^stap (\d+) van (\d+)$/,(m,a,b)=>E?"step "+a+" of "+b:"paso "+a+" de "+b],
+ [/^Deze ronde: (.+) (\d+) – (.+) (\d+)$/,(m,a,b,c,d)=>(E?"This round: ":"Esta ronda: ")+nm(a)+" "+b+" – "+nm(c)+" "+d],
+ [/^Meeste kaarten \((.+?) (\d+), (.+?) (\d+)\): (.+?) \+(\d+)(.*)$/,(m,a,b,c,d,w,p,r)=>(E?"Most cards (":"Más cartas (")+nm(a)+" "+b+", "+nm(c)+" "+d+"): "+nm(w)+" +"+p+suf(lang,r)],
+ [/^Kaarten gelijk \((.+?) (\d+), (.+?) (\d+)\): niemand$/,(m,a,b,c,d)=>(E?"Cards tied (":"Cartas empatadas (")+nm(a)+" "+b+", "+nm(c)+" "+d+(E?"): nobody":"): nadie")],
+ [/^Meeste schoppen \((.+?) (\d+), (.+?) (\d+)\): (.+?) \+(\d+)(.*)$/,(m,a,b,c,d,w,p,r)=>(E?"Most spades (":"Más picas (")+nm(a)+" "+b+", "+nm(c)+" "+d+"): "+nm(w)+" +"+p+suf(lang,r)],
+ [/^Schoppen gelijk \((.+?) (\d+), (.+?) (\d+)\): niemand$/,(m,a,b,c,d)=>(E?"Spades tied (":"Picas empatadas (")+nm(a)+" "+b+", "+nm(c)+" "+d+(E?"): nobody":"): nadie")],
+ [/^(♠2|♦10): (.+?) \+(\d+)(.*)$/,(m,k,w,p,r)=>k+": "+nm(w)+" +"+p+suf(lang,r)],
+ [/^Azen: (.+?) \+(\d+)(.*)$/,(m,w,p,r)=>(E?"Aces: ":"Ases: ")+nm(w)+" +"+p+suf(lang,r)],
+ [/^Tafel leeggemaakt: (.+?) \+(\d+)(.*)$/,(m,w,p,r)=>(E?"Sweeps: ":"Mesas limpias: ")+nm(w)+" +"+p+suf(lang,r)],
+ [/^(♠2|♦10): (.+)$/,(m,k,w)=>k+": "+(w==="–"?w:nm(w))],
+ [/^Kaarten (\d+)–(\d+)$/,(m,a,b)=>(E?"Cards ":"Cartas ")+a+"–"+b],
+ [/^Azen (\d+)–(\d+)$/,(m,a,b)=>(E?"Aces ":"Ases ")+a+"–"+b],
+ [/^Tafel leeg (\d+)–(\d+)$/,(m,a,b)=>(E?"Sweeps ":"Mesa limpia ")+a+"–"+b],
+ [/^Azen ×(\d+)$/,(m,a)=>(E?"Aces ×":"Ases ×")+a],
+ [/^Tafel leeg ×(\d+)$/,(m,a)=>(E?"Sweep ×":"Mesa limpia ×")+a],
+ [/^Nog (\d+)× delen$/,(m,a)=>E?a+(a==="1"?" deal left":" deals left"):(a==="1"?"Queda 1 reparto":"Quedan "+a+" repartos")],
+ [/^(.+) begint\.$/,(m,a)=>isMe(a)?(E?"You start.":"Empiezas tú."):(E?nm(a)+" starts.":"Empieza "+nm(a)+".")],
+ [/^(.+) pakt de rest van de tafel \((\d+) kaarten\)\.$/,(m,a,n)=>isMe(a)?(E?"You take the rest of the table ("+n+" cards).":"Te llevas el resto de la mesa ("+n+" cartas)."):(E?nm(a)+" takes the rest of the table ("+n+" cards).":nm(a)+" se lleva el resto de la mesa ("+n+" cartas).")],
+ [/^(.+) pakt$/,(m,a)=>isMe(a)?(E?"You capture":"Te llevas"):(E?nm(a)+" captures":nm(a)+" se lleva")],
+ [/^(.+) bouwt (\d+)( \(dubbel\))?:$/,(m,a,n,d)=>(isMe(a)?(E?"You build ":"Construyes "):(E?nm(a)+" builds ":nm(a)+" construye "))+n+(d?(E?" (double)":" (doble)"):"")+":"],
+ [/^(.+) legt neer:$/,(m,a)=>isMe(a)?(E?"You lay down:":"Sueltas:"):(E?nm(a)+" lays down:":nm(a)+" suelta:")],
+ [/^(.+) wint het spel! 🎉$/,(m,a)=>isMe(a)?(E?"You win the game! 🎉":"¡Ganaste la partida! 🎉"):(E?nm(a)+" wins the game! 🎉":"¡"+nm(a)+" gana la partida! 🎉")],
+ [/^(.+) wint het spel\.$/,(m,a)=>E?nm(a)+" wins the game.":nm(a)+" gana la partida."],
+ [/^(.+) is aan de beurt$/,(m,a)=>E?nm(a)+"'s turn":"Turno de "+nm(a)],
+ [/^(.+) kiest een kaart$/,(m,a)=>E?nm(a)+" is choosing a card":nm(a)+" está eligiendo una carta"],
+ [/^Jouw beurt, (.+)$/,(m,a)=>(E?"Your turn, ":"Tu turno, ")+a],
+ [/^(.+) heeft het spel verlaten\.$/,(m,a)=>E?nm(a)+" left the game.":nm(a)+" abandonó la partida."],
+ [/^(.+) is weg\.$/,(m,a)=>E?nm(a)+" is gone.":nm(a)+" se fue."],
+ [/^(.*?)\s*Wachten tot (.+?) \(terug\)komt met code$/,(m,pre,a)=>(pre?T(pre)+" ":"")+(E?"Waiting for "+nm(a)+" to (re)join with code":"Esperando a que "+nm(a)+" (vuelva a) entrar con el código")],
+ [/^Verbinding met (.+) verbroken\.$/,(m,a)=>E?"Lost connection with "+nm(a)+".":"Se perdió la conexión con "+nm(a)+"."],
+ [/^Online met (.+)$/,(m,a)=>(E?"Online with ":"En línea con ")+nm(a)],
+ [/^Volgende ronde \((.+) begint\)$/,(m,a)=>isMe(a)?(E?"Next round (you start)":"Siguiente ronda (empiezas tú)"):(E?"Next round ("+nm(a)+" starts)":"Siguiente ronda (empieza "+nm(a)+")")],
+ [/^Ik ben (.+), laat mijn kaarten zien$/,(m,a)=>E?"I'm "+a+", show my cards":"Soy "+a+", muestra mis cartas"],
+ [/^(\d+) gewonnen$/,(m,a)=>E?a+" won":a+" ganadas"],[/^(\d+) verloren$/,(m,a)=>E?a+" lost":a+" perdidas"],
+ [/^(\d+) van (\d+) behaald\. Spellen samen op één telefoon tellen niet mee\.$/,(m,a,b)=>E?a+" of "+b+" unlocked. Games on one phone don't count.":a+" de "+b+" desbloqueados. Las partidas en un solo teléfono no cuentan."],
+ [/^Vitrine \((\d+) van (\d+) behaald\)$/,(m,a,b)=>E?"Showcase ("+a+" of "+b+" unlocked)":"Vitrina ("+a+" de "+b+" desbloqueados)"],
+ [/^Gelijk op (\d+)! (.+?) wint, omdat (.+?) na de vorige ronde dichter bij 21 zat \((\d+) tegen (\d+)\)\.$/,(m,s,w,x,a,b)=>isMe(w)?(E?"Tied at "+s+"! You win because you were closer to 21 after the previous round ("+a+" vs "+b+").":"¡Empate a "+s+"! Ganas tú porque estabas más cerca de 21 tras la ronda anterior ("+a+" contra "+b+")."):(E?"Tied at "+s+"! "+nm(w)+" wins because "+nm(w)+" was closer to 21 after the previous round ("+a+" vs "+b+").":"¡Empate a "+s+"! Gana "+nm(w)+" porque estaba más cerca de 21 tras la ronda anterior ("+a+" contra "+b+").")],
+ [/^Gelijk op (\d+), en ook daarvoor stonden jullie gelijk\. Jullie spelen nog een ronde\.$/,(m,s)=>E?"Tied at "+s+", and you were tied before that too. You'll play one more round.":"Empate a "+s+", y antes también estaban empatados. Jugarán una ronda más."],
+ [/^Tafel leeg! (.+) verliest een punt$/,(m,a)=>isMe(a)?(E?"Sweep! You lose a point":"¡Mesa limpia! Pierdes un punto"):(E?"Sweep! "+nm(a)+" loses a point":"¡Mesa limpia! "+nm(a)+" pierde un punto")],
+ [/^Tip: pak (.+) met (.+)\.$/,(m,a,b)=>(E?"Tip: capture ":"Consejo: llévate ")+itemsTr(lang,a)+(E?" with ":" con ")+b+"."],
+ [/^Tip: bouw (\d+) met (.+) op (.+)\.$/,(m,n,a,b)=>(E?"Tip: build ":"Consejo: construye ")+n+(E?" with ":" con ")+a+(E?" on ":" sobre ")+itemsTr(lang,b)+"."],
+ [/^Tip: leg (.+) neer\.$/,(m,a)=>(E?"Tip: lay down ":"Consejo: suelta ")+a+"."],
+ [/^Bouw (\d+)( \(dubbel\))?$/,(m,n,d)=>(E?"Build ":"Construir ")+n+(d?(E?" (double)":" (doble)"):"")],
+ [/^(\d+)( dubbel)? \((.+)\)$/,(m,n,d,w)=>n+(d?(E?" double":" doble"):"")+" ("+nm(w)+")"],
+ [/^Profiel van (.+)$/,(m,a)=>(E?"Profile of ":"Perfil de ")+nm(a)],
+ [/^Reageer met (.+)$/,(m,a)=>(E?"React with ":"Reaccionar con ")+a],
+ [/^Tegen de computer \((.+)\)$/,(m,a)=>(E?"Against the computer (":"Contra la computadora (")+T(a)+")"],
+ [/^Tegen (.+)$/,(m,a)=>(E?"Against ":"Contra ")+nm(a)],
+ [/^Bij (.+)$/,(m,a)=>(E?"Hosted by ":"Con ")+nm(a)],
+ [/^code (\w+)$/,(m,a)=>(E?"code ":"código ")+a],
+ [/^Verbinden met spel (\w+)…$/,(m,a)=>(E?"Connecting to game ":"Conectando a la partida ")+a+"…"],
+ [/^Spel (\w+) niet gevonden\. Controleer de code, of vraag je tegenstander het spel open te houden\.$/,(m,a)=>E?"Game "+a+" not found. Check the code, or ask your opponent to keep the game open.":"No se encontró la partida "+a+". Revisa el código o pídele a tu rival que mantenga la partida abierta."],
+ [/^Het spel wordt hervat… \(poging (\d+)\)$/,(m,a)=>E?"Resuming the game… (attempt "+a+")":"Reanudando la partida… (intento "+a+")"],
+ [/^Er ging iets mis met de verbinding \((.+)\)\. Probeer het opnieuw\.$/,(m,a)=>E?"Something went wrong with the connection ("+a+"). Please try again.":"Algo falló con la conexión ("+a+"). Inténtalo de nuevo."],
+ [/^Kopiëren lukte niet\. Stuur deze link: (.+)$/,(m,a)=>(E?"Copying failed. Send this link: ":"No se pudo copiar. Envía este enlace: ")+a],
+ [/^Je kapsel zit verborgen onder je (.+)\. Kies bij Hoofddeksel ‘Geen’ om het weer te zien\.$/,(m,a)=>E?"Your hairstyle is hidden under your "+findLower(lang,a)+". Choose ‘None’ under Headwear to see it again.":"Tu peinado está oculto bajo tu "+findLower(lang,a)+". Elige ‘Ninguno’ en Gorro para volver a verlo."],
+ [/^🔒 Behaal de prestatie ‘(.+)’ om dit vrij te spelen: (.+)\.$/,(m,a,b)=>(E?"🔒 Unlock the achievement ‘":"🔒 Consigue el logro ‘")+T(a)+(E?"’ to unlock this: ":"’ para desbloquear esto: ")+lcFirst(T(ucFirst(b)))+"."],
+ [/^nieuw voor je avatar: (.+)$/,(m,a)=>(E?"new for your avatar: ":"nuevo para tu avatar: ")+T(a)],
+ [/^🎁 (.+)$/,(m,a)=>"🎁 "+T(a)],
+ [/^(.+) 🔒$/,(m,a)=>T(a)+" 🔒"],
+ [/^Leeg vak (\d+)$/,(m,a)=>(E?"Empty slot ":"Espacio vacío ")+a],
+ [/^Kleur (\d+)$/,(m,a)=>"Color "+a],
+ [/^Stand: (.+?) (\d+), (.+?) (\d+)$/,(m,a,b,c,d)=>(E?"Score: ":"Marcador: ")+nm(a)+" "+b+", "+nm(c)+" "+d],
+ [/^Jij – (.+)$/,(m,a)=>(E?"You – ":"Tú – ")+nm(a)],
+ [/^(.+) won$/,(m,a)=>isMe(a)?(E?"You won":"Ganaste"):(E?nm(a)+" won":"Ganó "+nm(a))],
+ [/^(.+) tegen (.+)$/,(m,a,b)=>nm(a)+" vs "+nm(b)],
+ [/^(.+) (\d+) – (.+) (\d+)$/,(m,a,b,c,d)=>nm(a)+" "+b+" – "+nm(c)+" "+d]
+]}
+L.en.p=pats("en");L.es.p=pats("es");
+L.en.r=[[/Tijd om! Deze zet is automatisch gespeeld\./,"Time's up! This move was played automatically."],[/Nieuwe kaarten gedeeld\./,"New cards dealt."]];
+L.es.r=[[/Tijd om! Deze zet is automatisch gespeeld\./,"¡Se acabó el tiempo! Esta jugada se hizo automáticamente."],[/Nieuwe kaarten gedeeld\./,"Se repartieron cartas nuevas."]];
+})();
+
 // ================= start =================
-applyLook();
+applyLook();setRanks();document.documentElement.lang=LANG==="es"?"es-419":LANG;
 $("name").value=myName;
 renderMenu();
 (function(){
@@ -1629,6 +1970,7 @@ renderMenu();
 })();
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 render();
+$("langSel").value=LANG;trNode(document.body);trObs.observe(document.body,{childList:true,subtree:true,characterData:true});
 </script>
 </body>
 </html>
