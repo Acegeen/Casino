@@ -162,6 +162,38 @@ input[type=text],input:not([type]){font:inherit;font-size:16px;width:100%;box-si
 .pc-sel{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
 select{font:inherit;font-size:16px;width:100%;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:var(--field);color:var(--fg)}
 .pc-sel select{font-size:.8rem;padding:6px}
+.rp{position:relative;padding-bottom:0}
+#roundPop{position:fixed;inset:0;z-index:65;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center}
+#roundPop .sheet{background:var(--panel);color:var(--fg);width:min(100%,520px);max-height:90vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px 0;box-sizing:border-box;animation:up .35s cubic-bezier(.2,.8,.2,1)}
+@media (min-width:760px){#roundPop{align-items:center}#roundPop .sheet{border-radius:18px}}
+.rp-x{position:absolute;right:10px;top:8px;background:transparent;color:var(--muted);font-size:1.5rem;padding:4px 10px}
+.rp-head{text-align:center}.rp-head .trophy{font-size:3rem;animation:bounce 1s ease-in-out infinite alternate}
+@keyframes bounce{from{transform:translateY(0) rotate(-6deg)}to{transform:translateY(-8px) rotate(6deg)}}
+.race{display:flex;flex-direction:column;gap:14px;margin:16px 0 6px}
+.lane{display:grid;grid-template-columns:72px 1fr 34px;align-items:center;gap:8px}
+.lname{font-size:.8rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lscore{font-weight:900;font-size:1.3rem;text-align:right;font-variant-numeric:tabular-nums}
+.track{position:relative;height:42px;border-radius:21px;background:var(--felt);box-shadow:inset 0 2px 4px rgba(0,0,0,.3)}
+.track::before{content:"";position:absolute;left:12px;right:12px;top:50%;border-top:2px dashed rgba(255,255,255,.35)}
+.zone{position:absolute;top:0;bottom:0;background:rgba(245,184,0,.18)}
+.finish{position:absolute;top:-8px;bottom:-8px;width:0;border-left:3px solid var(--gold)}
+.finish span{position:absolute;top:-14px;left:-2px;font-size:1rem}.finish i{position:absolute;bottom:-14px;left:-7px;font-size:.65rem;font-style:normal;font-weight:800;color:var(--muted)}
+.runner{position:absolute;top:2px;transform:translateX(-50%);z-index:2}
+.runner.go .avatar{animation:hop .28s ease-in-out 4 alternate}
+@keyframes hop{to{transform:translateY(-6px)}}
+.gain{position:absolute;top:-12px;right:-14px;color:#fff;font-size:.7rem;border-radius:8px;padding:1px 5px;opacity:0;transform:scale(.5);transition:all .3s}
+.runner.done .gain{opacity:1;transform:scale(1)}
+.rp-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.rchip{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:12px;font-size:.8rem;font-weight:600;background:var(--field);border-left:4px solid var(--me);border-radius:8px;opacity:0;animation:chipin .35s ease-out forwards}
+.rchip.opp{border-left-color:var(--opp)}
+.rchip.off{opacity:.5;text-decoration:line-through}
+.rchip b{font-weight:900}.rchip small{color:var(--muted);font-weight:600}
+.rchip .ri{font-weight:900;min-width:1.4em;text-align:center}
+@keyframes chipin{from{opacity:0;transform:translateY(8px) scale(.9)}to{opacity:1;transform:none}}
+.rchip.off{animation-name:chipoff}@keyframes chipoff{from{opacity:0}to{opacity:.5}}
+.rp-tb{background:var(--field);border-radius:10px;padding:8px 10px;font-weight:600;margin-top:10px}
+.rp-more{text-align:center;color:var(--muted);font-size:.8rem;margin:14px 0 4px}
+.rp-foot{position:sticky;bottom:0;background:var(--panel);padding:12px 0 calc(14px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;border-top:1px solid var(--line);margin-top:10px}
 .hide{display:none!important}
 @media (min-width:760px){
   .wrap{width:min(96vw,1000px)}
@@ -179,6 +211,7 @@ select{font:inherit;font-size:16px;width:100%;padding:8px 10px;border-radius:10p
 </head>
 <body>
 <div id="toast"></div>
+<div id="roundPop" class="hide" onclick="if(event.target===this)closeRoundPop()"><div class="sheet rp"><button class="rp-x" onclick="closeRoundPop()" aria-label="Sluiten">×</button><div id="rpBody"></div><div class="rp-foot" id="rpFoot"></div></div></div>
 <div id="profileCard" class="hide" onclick="if(event.target===this)closeProfile()"><div class="sheet"><div id="pcBody"></div><p><button class="link" onclick="closeProfile()">Sluiten</button></p></div></div>
 <div class="wrap" id="wrap">
 <div class="top"><div class="brand"><div class="logo"><i>A♠</i></div><span>Ace Casino</span></div><div class="r"><div id="score"></div><button class="link small hide" id="rulesBtn" onclick="openPanel('rules')">Regels</button><button class="link small hide" id="menuBtn" onclick="leave()">Menu</button></div></div>
@@ -259,6 +292,7 @@ select{font:inherit;font-size:16px;width:100%;padding:8px 10px;border-radius:10p
 <p>Je speelt elke beurt precies één kaart uit je hand. Daarmee doe je één van deze drie dingen.</p>
 <p><b>1. Pakken.</b> Je pakt tafelkaarten met dezelfde waarde als je kaart, of groepjes kaarten die samen precies die waarde zijn. Je mag meerdere groepjes tegelijk pakken. Met een <span class="ex"><span>9♠</span></span> pak je bijvoorbeeld in één keer <span class="ex"><span class="r">9♥</span></span>, <span class="ex"><span>5♣</span><span class="r">4♦</span></span> en <span class="ex"><span class="r">6♥</span><span>3♠</span></span>. De gepakte kaarten gaan, samen met je eigen kaart, naar jouw stapel.</p>
 <p><b>2. Bouwen.</b> Je legt je kaart op een of meer tafelkaarten, zodat er een nieuwe waarde ontstaat: een bouwsel. Dat mag alleen als je een kaart met die nieuwe waarde nog in je hand hebt, want daarmee pak je het bouwsel later. Voorbeeld: op tafel ligt <span class="ex"><span>3♣</span></span> en jij hebt <span class="ex"><span class="r">5♥</span></span> en <span class="ex"><span>8♠</span></span>. Leg de 5 op de 3, dan ligt er een bouwsel van 8.</p>
+<p><b>Bouwsels pak je alleen in hun geheel.</b> Een bouwsel pak je met een kaart van precies die waarde. Je mag een bouwsel niet samen met andere tafelkaarten optellen. Ligt er een bouwsel van 8 en een losse 3, dan mag je die niet samen pakken met een 11.</p>
 <p>Een bouwsel is van iedereen: je tegenstander mag het pakken met een kaart van die waarde, of het verhogen door er een kaart bij te leggen, als hij de nieuwe waarde in zijn hand heeft.</p>
 <p><b>Dubbel bouwsel.</b> Bestaat een bouwsel uit meerdere groepjes met dezelfde waarde, zoals <span class="ex"><span>6♠</span><span class="r">5♦</span></span> en <span class="ex"><span>4♣</span><span>7♠</span></span> (twee keer 11), dan is het dubbel. Een dubbel bouwsel kan niemand meer verhogen; je pakt het alleen met een kaart van precies die waarde.</p>
 <p><b>Eigen bouwsel.</b> Ligt er een bouwsel van jou en heb je de kaart om het te pakken, dan mag je geen kaart neerleggen tot je het hebt meegenomen. Iets anders pakken of verder bouwen mag wel.</p>
@@ -270,7 +304,7 @@ select{font:inherit;font-size:16px;width:100%;padding:8px 10px;border-radius:10p
 <h3>Punten per ronde</h3>
 <p>Meeste kaarten: 3 punten. Meeste schoppen: 1 punt. Ruiten 10 <span class="ex"><span class="r">10♦</span></span>: 2 punten. Schoppen 2 <span class="ex"><span>2♠</span></span>: 1 punt. Elke aas: 1 punt. Tafel leeg: 1 punt per keer. Hebben jullie evenveel kaarten of evenveel schoppen, dan krijgt niemand dat punt.</p>
 <h3>Winnen en de eindsprint</h3>
-<p>Het spel gaat door tot iemand 21 punten of meer heeft en voor staat. Bij gelijke stand speel je verder. Vanaf 17 punten tellen voor jou alleen nog ‘meeste kaarten’ en ‘meeste schoppen’. Vanaf 20 punten telt alleen nog ‘meeste schoppen’.</p>
+<p>Het spel gaat door tot iemand 21 punten of meer heeft. Staan jullie dan gelijk, dan wint wie na de vorige ronde dichter bij 21 zat (17 tegen 13 na de vorige ronde en nu allebei 21: de speler met 17 wint). Stonden jullie toen ook gelijk, dan speel je nog een ronde. Vanaf 17 punten tellen voor jou alleen nog ‘meeste kaarten’ en ‘meeste schoppen’. Vanaf 20 punten telt alleen nog ‘meeste schoppen’.</p>
 <h3>Zo speel je in de app</h3>
 <p>Tik op een kaart in je hand en daarna op de tafelkaarten of bouwsels die je wilt gebruiken. De knoppen laten zien wat er kan: pakken, bouwen of neerleggen. Tegen de computer kun je een hint vragen of je laatste zet ongedaan maken. Online heb je 30 seconden per zet; daarna speelt de app automatisch voor je (je eigen bouwsel pakken als dat moet, anders je minst waardevolle kaart neerleggen). Je kunt reageren met emoji’s onderaan het scherm. Wil je het spel stap voor stap leren, kies dan ‘Leer het spel’ in het menu.</p>
 <p><button class="link" onclick="closePanel('rules')">Sluiten</button></p>
@@ -331,7 +365,7 @@ function parts(vals,v){
 }
 function capOK(card,items){
   if(!items.length)return false;
-  return vOpts(card).some(v=>{const ms=items.filter(i=>i.multi);if(ms.some(i=>i.val!==v))return false;const rs=items.filter(i=>!i.multi);if(!rs.length)return true;return combos(rs).some(vals=>sum(vals)%v===0&&parts(vals,v))});
+  return vOpts(card).some(v=>{const ms=items.filter(i=>i.val);if(ms.some(i=>i.val!==v))return false;const rs=items.filter(i=>!i.val);if(!rs.length)return true;return combos(rs).some(vals=>sum(vals)%v===0&&parts(vals,v))});
 }
 function buildInfo(card,items,rest){
   if(!items.length)return[];
@@ -426,18 +460,26 @@ function endRound(){
   const g={p:0,c:0},L=[];
   const G=(w,cat,p)=>{const t=S.tot[w],ok=t>=20?cat==="spades":t>=17?(cat==="cards"||cat==="spades"):true;if(ok){g[w]+=p;return""}return" (telt niet mee bij "+t+" punten)"};
   const n=w=>S.pile[w].length,sp=w=>S.pile[w].filter(c=>c.s===0).length;
-  const vs=f=>"{p} "+f("p")+", {c} "+f("c");
-  if(n("p")!==n("c")){const w=n("p")>n("c")?"p":"c";L.push("Meeste kaarten ("+vs(n)+"): {"+w+"} +3"+G(w,"cards",3))}else L.push("Kaarten gelijk ("+vs(n)+"): niemand");
-  if(sp("p")!==sp("c")){const w=sp("p")>sp("c")?"p":"c";L.push("Meeste schoppen ("+vs(sp)+"): {"+w+"} +1"+G(w,"spades",1))}else L.push("Schoppen gelijk ("+vs(sp)+"): niemand");
+  const vs=f=>"{p} "+f("p")+", {c} "+f("c"),IT=[];
+  const add=(icon,label,w,p,cat,line)=>{const nt=G(w,cat,p);IT.push({icon,label,w,p,ok:!nt});L.push(line+nt)};
+  if(n("p")!==n("c")){const w=n("p")>n("c")?"p":"c";add("🃏","Meeste kaarten",w,3,"cards","Meeste kaarten ("+vs(n)+"): {"+w+"} +3")}else L.push("Kaarten gelijk ("+vs(n)+"): niemand");
+  if(sp("p")!==sp("c")){const w=sp("p")>sp("c")?"p":"c";add("♠️","Meeste schoppen",w,1,"spades","Meeste schoppen ("+vs(sp)+"): {"+w+"} +1")}else L.push("Schoppen gelijk ("+vs(sp)+"): niemand");
   for(const w of["p","c"]){
-    if(S.pile[w].some(c=>c.s===0&&c.r===2))L.push("♠2: {"+w+"} +1"+G(w,"s2",1));
-    if(S.pile[w].some(c=>c.s===2&&c.r===10))L.push("♦10: {"+w+"} +2"+G(w,"d10",2));
+    if(S.pile[w].some(c=>c.s===0&&c.r===2))add("2♠","Schoppen 2",w,1,"s2","♠2: {"+w+"} +1");
+    if(S.pile[w].some(c=>c.s===2&&c.r===10))add("10♦","Ruiten 10",w,2,"d10","♦10: {"+w+"} +2");
   }
-  for(const w of["p","c"]){const a=S.pile[w].filter(c=>c.r===1).length;if(a)L.push("Azen: {"+w+"} +"+a+G(w,"aces",a))}
-  for(const w of["p","c"])if(S.clr[w]>0)L.push("Tafel leeggemaakt: {"+w+"} +"+S.clr[w]+G(w,"clear",S.clr[w]));
+  for(const w of["p","c"]){const a=S.pile[w].filter(c=>c.r===1).length;if(a)add("A","Azen ×"+a,w,a,"aces","Azen: {"+w+"} +"+a)}
+  for(const w of["p","c"])if(S.clr[w]>0)add("✨","Tafel leeg ×"+S.clr[w],w,S.clr[w],"clear","Tafel leeggemaakt: {"+w+"} +"+S.clr[w]);
   S.tot.p+=g.p;S.tot.c+=g.c;S.hist.push({p:S.tot.p,c:S.tot.c});
-  const fin=(S.tot.p>=21||S.tot.c>=21)&&S.tot.p!==S.tot.c;
-  S.end={round:S.round,note,lines:L,g,tot:{...S.tot},fin,clr:{...S.clr},clrN:{...S.clrN},slow:{...S.slow}};
+  let fin=false,winner=null,tb="";
+  if(S.tot.p>=21||S.tot.c>=21){
+    if(S.tot.p!==S.tot.c){fin=true;winner=S.tot.p>S.tot.c?"p":"c"}
+    else{
+      for(let i=S.hist.length-2;i>=0;i--){const q=S.hist[i];if(q.p!==q.c){winner=q.p>q.c?"p":"c";fin=true;tb="Gelijk op "+S.tot.p+"! {"+winner+"} wint, omdat {"+winner+"} na de vorige ronde dichter bij 21 zat ("+q[winner]+" tegen "+q[other(winner)]+").";break}}
+      if(!fin)tb="Gelijk op "+S.tot.p+", en ook daarvoor stonden jullie gelijk. Jullie spelen nog een ronde.";
+    }
+  }
+  S.end={round:S.round,note,lines:L,items:IT,g,tot:{...S.tot},fin,winner,tb,clr:{...S.clr},clrN:{...S.clrN},slow:{...S.slow}};
   S.msg="Alle kaarten zijn gespeeld.";
 }
 function view(s,w){
@@ -448,7 +490,7 @@ function view(s,w){
   return{table:s.table.map(it=>it.val?{...it,owner:sw(it.owner)}:it),hand:s.hand[w],oppN:s.hand[o].length,deckN:s.deck.length,
     pileS:{p:ps(w),c:ps(o)},clr:pr(s.clr),tot:pr(s.tot),round:s.round,over:s.over,turn:sw(s.turn),starter:sw(s.starter),
     msg:tx(s.msg),lastMove:s.lastMove?{...s.lastMove,who:sw(s.lastMove.who),extra:tx(s.lastMove.extra)}:null,mv:s.mv,mid:s.mid,hist:s.hist.map(pr),aided:!!s.aided,
-    end:s.end?{...s.end,note:tx(s.end.note),lines:s.end.lines.map(tx),g:pr(s.end.g),tot:pr(s.end.tot),clr:pr(s.end.clr||{p:0,c:0}),clrN:pr(s.end.clrN||{p:0,c:0}),slow:pr(s.end.slow||{p:true,c:true})}:null};
+    end:s.end?{...s.end,note:tx(s.end.note),tb:tx(s.end.tb),winner:sw(s.end.winner),items:(s.end.items||[]).map(it=>({...it,w:sw(it.w)})),lines:s.end.lines.map(tx),g:pr(s.end.g),tot:pr(s.end.tot),clr:pr(s.end.clr||{p:0,c:0}),clrN:pr(s.end.clrN||{p:0,c:0}),slow:pr(s.end.slow||{p:true,c:true})}:null};
 }
 function sync(){
   if(!S)return;
@@ -733,7 +775,7 @@ function recordStats(){
   if(st.aces>=100)unlock("acesboss");
   if(st.d10>=25)unlock("d10");
   if(E.fin){
-    const win=E.tot.p>E.tot.c,H=V.hist||[];
+    const win=E.winner==="p",H=V.hist||[];
     st.games=(st.games||0)+1;st.bestGame=Math.max(st.bestGame||0,E.tot.p);
     if(mode==="ai")st.ai[diff][win?"w":"l"]++;
     else{const k=oppName,o=st.online[k]=st.online[k]||{w:0,l:0};if(win&&o.last==="l")unlock("revenge");o[win?"w":"l"]++;o.last=win?"w":"l";if(o.w+o.l>=10)unlock("rival")}
@@ -780,7 +822,7 @@ function openPanel(id){
   window.scrollTo(0,0);
 }
 function closePanel(id){hide(id);if(!mode)show("menu");else window.scrollTo(0,0)}
-function toMenu(){PANELS.forEach(hide);["end","handoff"].forEach(hide);show("menu");renderMenu();render()}
+function toMenu(){PANELS.forEach(hide);["end","handoff","roundPop"].forEach(hide);show("menu");renderMenu();render()}
 function renderDiff(){$("diffSeg").innerHTML=Object.keys(DIFF).map(k=>'<button class="'+(k===diff?"on":"")+'" onclick="setDiff(\''+k+'\')">'+DIFF[k]+"</button>").join("")}
 function setDiff(k){diff=k;lsSet("ac_diff",k);renderDiff()}
 function startAi(s){mode="ai";oppName="Computer";S=newState();startRound(s);hide("aistart");selH=-1;selT=[];skipAnim=false;renderedMv=null;sync();if(S.turn==="c")aiPlay()}
@@ -1117,6 +1159,35 @@ function renderThink(){
     document.querySelectorAll("#opp .card").forEach((e,i)=>e.classList.toggle("think",i===oppThink));
   }
 }
+function winText(E){const on=esc(oppName),me=esc(meLabel()),won=E.winner==="p";return mode==="local"?(won?me:on)+" wint het spel! 🎉":won?"Jij wint het spel! 🎉":on+" wint het spel."}
+function nextBtn(E){
+  const dis=connOK()?"":" disabled",on=esc(oppName),me=esc(meLabel());
+  if(E.fin)return"<button onclick=\"closeRoundPop();nextAct('newmatch')\""+dis+">"+(mode==="host"||mode==="guest"?"Revanche!":"Nieuw spel")+"</button>";
+  const ns=V.starter==="p"?"c":"p";return"<button onclick=\"closeRoundPop();nextAct('next')\""+dis+">Volgende ronde ("+(ns==="p"?(mode==="local"?me:"jij")+" begint":on+" begint")+")</button>";
+}
+function closeRoundPop(){hide("roundPop")}
+// pop-up: race naar 21 met de punten die per onderdeel binnenkomen
+function openRoundPop(){
+  if(!V||!V.over||!V.end||!mode||(mode==="local"&&handoff))return;
+  const E=V.end,H=V.hist||[],prev=H.length>1?H[H.length-2]:{p:0,c:0},mx=Math.max(22,E.tot.p+1,E.tot.c+1),pc=v=>(Math.min(v,mx)/mx*100).toFixed(1);
+  const on=esc(oppName),me=esc(meLabel()),items=E.items||[];
+  const lane=(k,name,col,first)=>'<div class="lane"><div class="lname">'+name+'</div><div class="track"><div class="zone" style="left:'+pc(17)+'%;width:'+(pc(21)-pc(17)).toFixed(1)+'%"></div><div class="finish" style="left:'+pc(21)+'%">'+(first?"<span>🏁</span>":"<i>21</i>")+'</div><div class="runner" data-from="'+pc(prev[k])+'" data-to="'+pc(E.tot[k])+'" style="left:'+pc(prev[k])+'%">'+avatarSVG(avFor(k==="p"?"me":"opp"),38)+'<b class="gain" style="background:'+col+'">+'+E.g[k]+'</b></div></div><div class="lscore" style="color:'+col+'">'+E.tot[k]+"</div></div>";
+  let h=(E.fin?'<div class="rp-head win"><div class="trophy">🏆</div><h2>'+winText(E)+"</h2></div>":"<h2>Ronde "+E.round+" voorbij</h2>");
+  h+='<div class="race">'+lane("p",me,"var(--me)",true)+lane("c",on,"var(--opp)",false)+"</div>";
+  h+='<div class="rp-chips">'+(items.length?items.map((it,i)=>'<div class="rchip '+(it.w==="p"?"me":"opp")+(it.ok?"":" off")+'" style="animation-delay:'+(.15+i*.18).toFixed(2)+'s"><span class="ri">'+it.icon+"</span>"+esc(it.label)+"<b>"+(it.ok?"+"+it.p:"telt niet")+"</b><small>"+(it.w==="p"?me:on)+"</small></div>").join(""):'<p class="hint">Geen punten deze ronde.</p>')+"</div>";
+  if(E.tb)h+='<p class="rp-tb">'+N(E.tb,1)+"</p>";
+  h+='<div class="rp-more">↓ Scroll voor de details</div><h3>Details van ronde '+E.round+"</h3>"+(E.note?"<p>"+N(E.note,1)+"</p>":"")+"<p>"+E.lines.map(l=>N(l,1)).join("<br>")+"</p><p><b>Deze ronde: "+me+" "+E.g.p+" – "+on+" "+E.g.c+"</b></p>";
+  if(H.length)h+="<h3>Scoreverloop</h3>"+bars(H);
+  $("rpBody").innerHTML=h;$("rpFoot").innerHTML=nextBtn(E);show("roundPop");
+  const sheet=document.querySelector("#roundPop .sheet");if(sheet)sheet.scrollTop=0;
+  items.forEach((it,i)=>setTimeout(()=>{if(it.ok)tone(it.w==="p"?700+i*60:420+i*30,.08,"triangle",.07)},150+i*180));
+  const t0=150+items.length*180+200;
+  document.querySelectorAll("#roundPop .runner").forEach(r=>{
+    const to=r.dataset.to;
+    if(r.animate&&animOn()){r.animate([{left:r.dataset.from+"%"},{left:to+"%"}],{duration:1100,delay:t0,easing:"cubic-bezier(.3,.8,.2,1)",fill:"forwards"}).onfinish=()=>{r.style.left=to+"%";r.classList.add("done")};setTimeout(()=>r.classList.add("go"),t0)}
+    else{r.style.left=to+"%";r.classList.add("go","done")}
+  });
+}
 function render(){
   const inGame=!!(V&&V.round>0)&&!(mode==="local"&&handoff);
   const ho=$("handoff");
@@ -1126,13 +1197,13 @@ function render(){
   $("rulesBtn").classList.toggle("hide",!mode||mode==="tut");
   $("score").textContent=inGame&&mode!=="tut"?meLabel()+" "+V.tot.p+" – "+oppName+" "+V.tot.c:"";
   renderStatus();renderTut();
-  if(!inGame){hide("end");updateTimer();return}
+  if(!inGame){hide("end");hide("roundPop");updateTimer();return}
   const fresh=V.mv!==renderedMv;
   if(fresh){oppThink=-1;thinkSent=-2}
   const doAnim=fresh&&!skipAnim&&animOn();
   const before=doAnim?snap():null;
   $("info").textContent=mode==="tut"?"Oefenen zonder punten":"Ronde "+V.round+(mode==="ai"?" · "+DIFF[diff]:mode==="local"?" · samen op één telefoon":mode?" · online":"");
-  $("deckpos").className="pile deck"+(V.deckN?"":" empty");$("deckpos").innerHTML="<span>Stapel<br>"+V.deckN+"</span><b></b>";
+  $("deckpos").className="pile deck"+(V.deckN?"":" empty");$("deckpos").innerHTML="<span>"+(V.deckN?"Nog<br>"+Math.round(V.deckN/8)+"× delen":"Laatste<br>hand")+"</span><b></b>";
   $("pileOpp").className="pile"+(V.pileS.c.n?"":" empty");$("pileOpp").innerHTML='<button class="pav" onclick="openProfile(\'opp\')" aria-label="Profiel van '+esc(oppName)+'">'+avatarSVG(avFor("opp"),36)+"</button><b></b><span>"+esc(oppName)+"<br>"+V.pileS.c.n+"</span>";
   $("pileMe").className="pile"+(V.pileS.p.n?"":" empty");$("pileMe").innerHTML='<button class="pav" onclick="openProfile(\'me\')" aria-label="Mijn profiel">'+avatarSVG(avFor("me"),36)+"</button><b></b><span>"+esc(meLabel())+"<br>"+V.pileS.p.n+"</span>";
   $("opp").innerHTML=Array.from({length:V.oppN},(_,i)=>'<div class="card back'+(i===oppThink?" think":"")+'" data-cid="b'+i+'"></div>').join("");
@@ -1166,29 +1237,24 @@ function render(){
   $("acts").innerHTML=a;
   $("tools").innerHTML=mode==="ai"&&!V.over?'<button class="ghostbtn small" onclick="showHint()"'+(myTurn()?"":" disabled")+'>💡 Hint</button><button class="ghostbtn small" onclick="undo()"'+(myTurn()&&undoStack.length?"":" disabled")+">↶ Ongedaan maken</button>":"";
   $("emobar").innerHTML=(mode==="host"||mode==="guest")&&connState==="ok"?EMO.map((e,i)=>'<button class="emobtn" onclick="sendEmo('+i+')" aria-label="Reageer met '+e+'">'+e+"</button>").join(""):"";
-  // einde ronde
+  // einde ronde: compacte balk; de uitslag zelf staat in de pop-up
   const E=V.end,end=$("end");
   if(V.over&&E){
     const on=esc(oppName),me=esc(meLabel());
-    let h="<h2>Ronde "+E.round+" voorbij</h2>"+(E.note?"<p>"+N(E.note,1)+"</p>":"")+"<p>"+E.lines.map(l=>N(l,1)).join("<br>")+"</p><p><b>Deze ronde: "+me+" "+E.g.p+" – "+on+" "+E.g.c+"</b><br>Totaal: "+me+" "+E.tot.p+" – "+on+" "+E.tot.c+"</p>";
-    if(V.hist&&V.hist.length)h+="<h3>Scoreverloop</h3>"+bars(V.hist);
-    const dis=connOK()?"":" disabled";
-    if(E.fin){
-      const won=E.tot.p>E.tot.c;
-      h+="<p><b>"+(mode==="local"?(won?me:on)+" wint het spel! 🎉":won?"Jij wint het spel! 🎉":on+" wint het spel.")+"</b></p><button onclick=\"nextAct('newmatch')\""+dis+">"+(mode==="host"||mode==="guest"?"Revanche!":"Nieuw spel")+"</button>";
-    }else{const ns=V.starter==="p"?"c":"p";h+="<button onclick=\"nextAct('next')\""+dis+">Volgende ronde ("+(ns==="p"?(mode==="local"?me:"jij")+" begint":on+" begint")+")</button>"}
-    end.innerHTML=h;show("end");
-  }else hide("end");
+    end.innerHTML="<h2>Ronde "+E.round+" voorbij</h2><p><b>"+me+" "+E.tot.p+" – "+on+" "+E.tot.c+"</b></p>"+(E.fin?"<p><b>"+winText(E)+"</b></p>":"")+'<div class="acts" style="justify-content:flex-start"><button class="alt" onclick="openRoundPop()">Uitslag bekijken</button>'+nextBtn(E)+"</div>";
+    show("end");
+  }else{hide("end");hide("roundPop")}
   // geluid, trillen, prestaties, animatie
   if(fresh&&!skipAnim&&mode!=="tut"){
     const lm=V.lastMove;
-    if(V.over&&E){if(lm&&lm.who==="p")moveBadges(lm);recordStats();if(E.fin){const won=E.tot.p>E.tot.c;if(mode==="local"||won){SFX.win();haptic([30,60,30,60,60])}else{SFX.lose();haptic(80)}}}
+    if(V.over&&E){if(lm&&lm.who==="p")moveBadges(lm);recordStats();if(E.fin){const won=E.winner==="p";if(mode==="local"||won){SFX.win();haptic([30,60,30,60,60])}else{SFX.lose();haptic(80)}}}
     else if(lm){
       moveBadges(lm);
       if(lm.k==="cap"&&lm.clear){SFX.clear();haptic([20,40,20])}else if(lm.k==="cap"){SFX.cap();haptic(15)}else if(lm.k==="build")SFX.build();else SFX.tick();
       if((mode==="host"||mode==="guest")&&V.turn==="p"&&!V.over)setTimeout(()=>{SFX.turn();haptic(10)},350);
     }else{SFX.deal()}
   }else if(fresh&&V.over&&E&&mode!=="tut")recordStats();
+  if(fresh&&V.over&&E&&mode!=="tut"&&!skipAnim)setTimeout(openRoundPop,450);
   if(before)animate(before);
   renderedMv=V.mv;skipAnim=false;
   updateTimer();
